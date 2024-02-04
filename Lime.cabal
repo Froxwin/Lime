@@ -18,17 +18,19 @@ extra-doc-files:    README.md
 
 common warnings
     ghc-options:
-        - -Wall
-        - -Wno-type-defaults
+        -Wall
+        -Wno-type-defaults
 
 executable Lime
-    import:           warnings
+    import: warnings
     main-is:          Main.hs
     build-depends:    base ^>=4.17.2.1
     hs-source-dirs:   src
     default-language: Haskell2010
     other-modules:
-        - Color
-        - Hittable
-        - Ray
-        - Vector
+        Color
+        Hittable
+        Ray
+        Vector
+    default-extensions:
+        InstanceSigs
