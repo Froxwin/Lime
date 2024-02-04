@@ -1,25 +1,16 @@
-module Hittable where
+module Objects.Sphere where
 
-import           Ray                            ( Ray(Ray, direction)
+import           Objects.Hittable               ( HitRecord(HitRecord)
+                                                , Hittable(..)
+                                                )
+import           Ray                            ( Ray(Ray)
                                                 , rayAt
                                                 )
 import           Vector                         ( Vector((<+>), (<->), dot)
                                                 , Vector3(Vector3)
                                                 , magnitude
                                                 , unitVector
-                                                , neg
                                                 )
-
-data HitRecord = HitRecord
-  { point     :: Vector3
-  , normal    :: Vector3
-  , t         :: Double
-  }
-
-faceNormal record r outwardNormal = if (direction r `dot` outwardNormal) < 0 then outwardNormal else neg outwardNormal
-
-class Hittable a where
-  hit :: a -> Ray -> Double -> Double -> Maybe HitRecord
 
 data Sphere = Sphere
   { center :: Vector3
@@ -27,6 +18,7 @@ data Sphere = Sphere
   }
 
 instance Hittable Sphere where
+  hit :: Sphere -> Ray -> Double -> Double -> Maybe HitRecord
   hit (Sphere c r) (Ray a d) tMin tMax
     | delta < 0 = Nothing
     | otherwise = if t <= tMin || t >= tMax

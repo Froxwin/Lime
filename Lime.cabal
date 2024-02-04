@@ -25,12 +25,16 @@ executable Lime
     import: warnings
     main-is:          Main.hs
     build-depends:    base ^>=4.17.2.1
-    hs-source-dirs:   src
+    hs-source-dirs:
+        src
+        src\Objects
     default-language: Haskell2010
     other-modules:
         Color
-        Hittable
+        Objects.Hittable
+        Objects.Sphere
         Ray
+        Camera
         Vector
     default-extensions:
         InstanceSigs

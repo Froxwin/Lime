@@ -1,12 +1,5 @@
 module Vector where
 
-data Vector3 = Vector3
-  { vx :: Double
-  , vy :: Double
-  , vz :: Double
-  }
-  deriving Eq
-
 class Vector a where
     (<+>) :: a -> a -> a
     (<->) :: a -> a -> a
@@ -15,6 +8,19 @@ class Vector a where
     dot :: a -> a -> Double
     cross :: a -> a -> a
     neg :: a -> a
+
+magnitude :: Vector a => a -> Double
+magnitude v = sqrt (v `dot` v)
+
+unitVector :: Vector a => a -> a
+unitVector v = v </> magnitude v
+
+data Vector3 = Vector3
+  { vx :: Double
+  , vy :: Double
+  , vz :: Double
+  }
+  deriving Eq
 
 instance Vector Vector3 where
   (<+>) (Vector3 x y z) (Vector3 x' y' z') =
@@ -29,14 +35,10 @@ instance Vector Vector3 where
   neg (Vector3 x y z) = Vector3 (-x) (-y) (-z)
 
 instance Show Vector3 where
+  show :: Vector3 -> String
   show (Vector3 x y z) =
     concat ["(", show x, ", ", show y, ", ", show z, ")"]
 
 instance Ord Vector3 where
+  (<=) :: Vector3 -> Vector3 -> Bool
   a <= b = magnitude a <= magnitude b
-
-magnitude :: Vector3 -> Double
-magnitude v = sqrt (v `dot` v)
-
-unitVector :: Vector3 -> Vector3
-unitVector v = v </> magnitude v
