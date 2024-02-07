@@ -15,7 +15,10 @@ common warnings
 executable Lime
     import:             warnings
     main-is:            Main.hs
-    build-depends:      base ^>=4.17.2.1
+    build-depends:
+        , base    ^>=4.17.2.1
+        , random
+
     ghc-options:        -Wall -Wno-type-defaults -threaded
     default-extensions: InstanceSigs
     hs-source-dirs:     Source Source\Objects
