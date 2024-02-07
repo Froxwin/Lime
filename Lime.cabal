@@ -3,7 +3,7 @@ name:            Lime
 version:         0.1.0.0
 synopsis:        A simple raytracer written in haskell
 license:         BSD-3-Clause
-license-file:    LICENSE
+license-file:    LICENSE.md
 copyright:       2024 Froxwin
 author:          Froxwin
 category:        Graphics
@@ -18,7 +18,7 @@ executable Lime
     build-depends:      base ^>=4.17.2.1
     ghc-options:        -Wall -Wno-type-defaults -threaded
     default-extensions: InstanceSigs
-    hs-source-dirs:     src src\Objects
+    hs-source-dirs:     Source Source\Objects
     other-modules:
         Camera
         Color
