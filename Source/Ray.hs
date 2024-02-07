@@ -1,14 +1,14 @@
 module Ray where
 
-import           Vector                         ( Vector((<+>), (<.>))
-                                                , Vector3
+import           Vector                         ( (<+>)
+                                                , (<.>)
+                                                , Vector
                                                 )
 
 data Ray = Ray
-  { origin    :: Vector3
-  , direction :: Vector3
+  { origin    :: Vector
+  , direction :: Vector
   }
-  deriving Show
 
-rayAt :: Ray -> Double -> Vector3
+rayAt :: Ray -> Double -> Vector
 rayAt r t = origin r <+> (t <.> direction r)

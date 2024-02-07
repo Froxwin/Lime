@@ -2,7 +2,7 @@
 
 - [x] Sphere rendering
 - [x] Multiple Objects
-- [ ] Anti Aliasing
+- [x] Anti Aliasing
 - [ ] Parallal Processing
 - [ ] Light and Materials
 - [ ] Positionable Camera

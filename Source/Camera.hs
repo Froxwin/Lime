@@ -1,19 +1,13 @@
 module Camera where
 
-import           Color                          ( Color(Color)
-                                                , addColor
-                                                )
 import           Data.List                      ( sortBy )
 import           Data.Maybe                     ( mapMaybe )
 import           Ray                            ( Ray(Ray, direction) )
-import           System.Random
-import           Vector                         ( Vector
-                                                  ( (<+>)
-                                                  , (<->)
-                                                  , (<.>)
-                                                  , (</>)
-                                                  )
-                                                , Vector3(Vector3, vy)
+import           Vector                         ( (<+>)
+                                                , (<->)
+                                                , (<.>)
+                                                , (</>)
+                                                , Vector(Vector, vy)
                                                 , unitVector
                                                 )
 
@@ -28,15 +22,15 @@ viewportHeight = 2
 viewportWidth = aspectRatio * viewportHeight
 focalLength = 1
 
-cameraOrigin, horizontal, vertical, bottomLeft :: Vector3
-cameraOrigin = Vector3 0 0 0
-horizontal = Vector3 viewportWidth 0 0
-vertical = Vector3 0 viewportHeight 0
+cameraOrigin, horizontal, vertical, bottomLeft :: Vector
+cameraOrigin = Vector 0 0 0
+horizontal = Vector viewportWidth 0 0
+vertical = Vector 0 viewportHeight 0
 bottomLeft =
   cameraOrigin
-    <-> (horizontal </> 2)
-    <-> (vertical </> 2)
-    <+> Vector3 0 0 focalLength
+    <-> (2 </> horizontal)
+    <-> (2 </> vertical)
+    <+> Vector 0 0 focalLength
 
 -- List of xs and ys of viewport
 u, v :: [Double]
@@ -44,17 +38,17 @@ u = map (/ fromIntegral imgWidth) [0 .. fromIntegral imgWidth - 1]
 v = reverse
   $ map (/ fromIntegral imgHeight) [0 .. fromIntegral imgHeight - 1]
 
-bottomColor, topColor :: Vector3
-bottomColor = Vector3 1.0 1.0 1.0
-topColor = Vector3 0.5 0.7 1.0
+bottomColor, topColor :: Vector
+bottomColor = Vector 1.0 1.0 1.0
+topColor = Vector 0.5 0.7 1.0
 
-type Object = Ray -> Double -> Double -> Maybe (Vector3, Vector3)
+type Object = Ray -> Double -> Double -> Maybe (Vector, Vector)
 
 -- left to right top to bottom
 rayColor :: Ray -> [Object] -> Color
 rayColor r ls =
-  let (Vector3 tx ty tz)
-        | not (null hits) = 0.5 <.> (head hits <+> Vector3 1 1 1)
+  let (Vector tx ty tz)
+        | not (null hits) = 0.5 <.> (head hits <+> Vector 1 1 1)
         | otherwise       = ((1 - d) <.> bottomColor) <+> (d <.> topColor)
   in  Color tx ty tz
  where
@@ -64,50 +58,43 @@ rayColor r ls =
     (hitting r 0 (1 / 0))
     ls
 
-render :: Monad m => [Object] -> m [Color]
-render ls = do
-  return
-    [ foldl
-        addColor
-        (Color 0 0 0)
-        [ rayColor (Ray cameraOrigin rayDirection) ls
-        | sx <- [-1 .. 1]
-        , sy <- [-1 .. 1]
-        , let
-          rayDirection =
-            bottomLeft
-              <+> (   (ui + (fromIntegral sx / fromIntegral imgWidth))
-                  <.> horizontal
-                  )
-              <+> (   (vi + (fromIntegral sy / fromIntegral imgWidth))
-                  <.> vertical
-                  )
-              <-> cameraOrigin
-        ]
-    | vi <- v
-    , ui <- u
-    ]
+samplesPerPixel :: Double
+samplesPerPixel = 9
+sampleSquare :: [Double]
+sampleSquare =
+  [-(sqrt samplesPerPixel - 1) / 2 .. (sqrt samplesPerPixel - 1) / 2]
 
-randomIntInRange :: Int -> Int -> IO Int
-randomIntInRange minVal maxVal = do
-  a <- randomRIO (minVal, maxVal)
-  print a
-  return a
+render :: [Object] -> [Color]
+render ls =
+  [ foldl
+      addColor
+      (Color 0 0 0)
+      [ rayColor (Ray cameraOrigin rayDirection) ls
+      | sx <- sampleSquare
+      , sy <- sampleSquare
+      , let rayDirection =
+              bottomLeft
+                <+> ((ui + (sx / fromIntegral imgWidth)) <.> horizontal)
+                <+> ((vi + (sy / fromIntegral imgWidth)) <.> vertical)
+                <-> cameraOrigin
+      ]
+  | vi <- v
+  , ui <- u
+  ]
 
-main :: IO ()
-main = do
-  randomNumber <- randomIntInRange (-4) 4
-  putStrLn $ "Random number between -4 and 4: " ++ show randomNumber
+data Color = Color
+  { red   :: Double
+  , green :: Double
+  , blue  :: Double
+  }
+  deriving Eq
 
--- render :: [Object] -> [Color]
--- render ls =
---   [ rayColor (Ray cameraOrigin rayDirection) ls
---   | vi <- v
---   , ui <- u
---   , let rayDirection =
---           bottomLeft
---             <+> (ui <.> horizontal)
---             <+> (vi <.> vertical)
---             <-> cameraOrigin
---   ]
+instance Show Color where
+  show :: Color -> String
+  show (Color r g b) = concat $ (flip $ zipWith (++)) [" ", " ", ""] $ map
+    (show . round . (/ samplesPerPixel) . (* 255.9))
+    [r, g, b]
 
+addColor :: Color -> Color -> Color
+(Color r g b) `addColor` (Color r' g' b') =
+  Color (r + r') (g + g') (b + b')

@@ -1,21 +1,17 @@
 module Objects.Sphere where
 
+import           Camera                         ( Object )
 import           Ray                            ( Ray(Ray)
                                                 , rayAt
                                                 )
-import           Vector                         ( Vector((<->), dot)
-                                                , Vector3
+import           Vector                         ( (<->)
+                                                , Vector
+                                                , dot
                                                 , magnitude
                                                 , unitVector
                                                 )
 
-sphere
-  :: Vector3
-  -> Double
-  -> Ray
-  -> Double
-  -> Double
-  -> Maybe (Vector3, Vector3)
+sphere :: Vector -> Double -> Object
 sphere center radius ray tMin tMax
   | delta < 0 = Nothing
   | otherwise = if t' < t
