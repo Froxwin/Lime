@@ -1,40 +1,33 @@
-cabal-version:      3.0
-name:               Lime
-
--- The package version.
--- See the Haskell package versioning policy (PVP) for standards
--- guiding when and how versions should be incremented.
--- https://pvp.haskell.org
--- PVP summary:     +-+------- breaking API changes
---                  | | +----- non-breaking API additions
---                  | | | +--- code changes with no API change
-version:            0.1.0.0
-license:            BSD-3-Clause
-license-file:       LICENSE
-author:             Froxwin
-category:           Graphics
-build-type:         Simple
-extra-doc-files:    README.md
+cabal-version:   3.0
+name:            Lime
+version:         0.1.0.0
+synopsis:        A simple raytracer written in haskell
+license:         BSD-3-Clause
+license-file:    LICENSE
+copyright:       2024 Froxwin
+author:          Froxwin
+category:        Graphics
+build-type:      Simple
+extra-doc-files: README.md
 
 common warnings
-    ghc-options:
-        -Wall
-        -Wno-type-defaults
 
 executable Lime
-    import: warnings
-    main-is:          Main.hs
-    build-depends:    base ^>=4.17.2.1
-    hs-source-dirs:
-        src
-        src\Objects
-    default-language: Haskell2010
+    import:             warnings
+    main-is:            Main.hs
+    build-depends:      base ^>=4.17.2.1
+    ghc-options:        -Wall -Wno-type-defaults -threaded
+    default-extensions: InstanceSigs
+    hs-source-dirs:     src src\Objects
     other-modules:
+        Camera
         Color
-        Objects.Hittable
         Objects.Sphere
         Ray
-        Camera
         Vector
-    default-extensions:
-        InstanceSigs
+
+    default-language:   Haskell2010
+
+source-repository head
+    type:     git
+    location: https://github.com/Froxwin/Lime

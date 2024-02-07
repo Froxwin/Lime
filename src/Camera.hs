@@ -1,6 +1,12 @@
 module Camera where
 
-import Vector
+import           Vector                         ( Vector
+                                                  ( (<+>)
+                                                  , (<->)
+                                                  , (</>)
+                                                  )
+                                                , Vector3(Vector3)
+                                                )
 
 aspectRatio, imgWidthD, imgHeightD :: Double
 imgWidth, imgHeight :: Integer
