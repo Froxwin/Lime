@@ -35,8 +35,7 @@ bottomLeft =
 -- List of xs and ys of viewport
 u, v :: [Double]
 u = map (/ fromIntegral imgWidth) [0 .. fromIntegral imgWidth - 1]
-v = reverse
-  $ map (/ fromIntegral imgHeight) [0 .. fromIntegral imgHeight - 1]
+v = reverse $ map (/ fromIntegral imgHeight) [0 .. fromIntegral imgHeight - 1]
 
 bottomColor, topColor :: Vector
 bottomColor = Vector 1.0 1.0 1.0
@@ -96,5 +95,4 @@ instance Show Color where
     [r, g, b]
 
 addColor :: Color -> Color -> Color
-(Color r g b) `addColor` (Color r' g' b') =
-  Color (r + r') (g + g') (b + b')
+(Color r g b) `addColor` (Color r' g' b') = Color (r + r') (g + g') (b + b')
