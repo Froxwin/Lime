@@ -1,6 +1,6 @@
 module Main where
 
-import Engine as Lib(main)
+import Engine as Lib(ignite)
 
 main :: IO ()
-main = Lib.main
+main = Lib.ignite
