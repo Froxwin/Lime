@@ -16,8 +16,8 @@ import           Vector                         ( Vector(Vector) )
 objects :: [Object]
 objects = [sphere (Vector 0 (-100.5) 0) 100, sphere (Vector 0 0.5 2) 1]
 
-main :: IO ()
-main = do
+ignite :: IO ()
+ignite = do
   (p, handle) <- openTempFile "." "temp.ppm"
   hPutStrLn handle
     $ concat ["P3\n", show imgWidth, " ", show imgHeight, " 255\n"]
