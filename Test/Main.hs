@@ -1,5 +1,5 @@
 import           Camera
-import           Objects.Sphere
+import           Things.Sphere
 import           Ray
 import           Test.Tasty
 import           Test.Tasty.HUnit
