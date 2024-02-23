@@ -13,15 +13,19 @@ import           Vector                         ( (<+>)
                                                 , (</>)
                                                 , Vector(Vector, vy)
                                                 , cross
+                                                , magnitude
                                                 , unitVector
+                                                , vx
+                                                , vy
                                                 )
 
 data Camera = Camera
-  { origin      :: Vector
-  , looking     :: Vector
-  , focalLength :: Double
-  , fov         :: Double
-  , upVec       :: Vector
+  { origin       :: Vector
+  , looking      :: Vector
+  , focalLength  :: Double
+  , fov          :: Double
+  , upVec        :: Vector
+  , defocusAngle :: Double
   }
   deriving (Show, Generic)
 
@@ -68,8 +72,10 @@ rayColor r ls =
 -}
 render :: Scene -> [Thing] -> [Color]
 render s ls =
-  [ (\(Color r g b) ->
-      Color (r / samplesPerPixel) (g / samplesPerPixel) (b / samplesPerPixel)
+  [ (\(Color r g b) -> Color
+      (r / samplesPerPixel / fromIntegral (length disk))
+      (g / samplesPerPixel / fromIntegral (length disk))
+      (b / samplesPerPixel / fromIntegral (length disk))
     )
       $ foldl
           addColor
@@ -77,11 +83,16 @@ render s ls =
           [ rayColor (Ray cameraOrigin rayDirection) ls
           | sx <- sampleSquare
           , sy <- sampleSquare
-          , let rayDirection =
+          , let pixelSample =
                   bottomLeft
                     <+> ((ui + (sx / imgWidth)) <.> horizontal)
                     <+> ((vi + (sy / imgWidth)) <.> vertical)
-                    <-> cameraOrigin
+          , diskSample <- disk
+          , let rayOrigin =
+                  cameraOrigin
+                    <+> (vx diskSample <.> diskU)
+                    <+> (vy diskSample <.> diskV)
+          , let rayDirection = pixelSample <-> rayOrigin
           ]
   | vi <- reverse $ scanline imgHeight
   , ui <- scanline imgWidth
@@ -96,7 +107,7 @@ render s ls =
   samplesPerPixel = samples s
 
   -- camera
-  Camera cameraOrigin lookingAt fl f up = camera s
+  Camera cameraOrigin lookingAt fl f up da = camera s
   w               = unitVector (cameraOrigin <-> lookingAt)
   u               = unitVector $ cross up w
   v               = cross w u
@@ -109,6 +120,14 @@ render s ls =
   vertical        = viewportHeight <.> v
   bottomLeft =
     cameraOrigin <-> (2 </> horizontal) <-> (2 </> vertical) <-> (fl <.> w)
+
+  -- aperture
+  defocusRadius = fl * tan (da / 2)
+  diskU         = defocusRadius <.> u
+  diskV         = defocusRadius <.> v
+  sampleDisk    = [-1, -0.6 .. 1]
+  disk          = filter (\x -> magnitude x <= 1)
+                         [ Vector sx sy 0 | sx <- sampleDisk, sy <- sampleDisk ]
 
 -- | Represents a rgb color type
 data Color = Color

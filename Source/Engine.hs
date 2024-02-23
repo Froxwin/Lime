@@ -20,7 +20,7 @@ import           Vector                         ( Vector(Vector) )
 
 -- | List of all objects in world
 objects :: [Thing]
-objects = [sphere (Vector 0 (-100.5) 0) 100, sphere (Vector 0 1 0) 1]
+objects = [sphere (Vector 0 (-100.5) 0) 100, sphere (Vector 0 1 0) 1, sphere (Vector 3 1 0) 1]
 
 readScene :: IO Scene
 readScene = either (error . show) id <$> decodeFileEither "./scene.yaml"

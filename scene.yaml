@@ -1,9 +1,10 @@
-samples: 1
+samples: 9
 height: 270
 width: 480
 camera:
-  origin: [1, 1, -3]
-  looking: [0, 0, 0]
-  focalLength: 1
-  fov: 1.74533
+  origin: [-2, 2, 1]
+  looking: [0, 0, -1]
+  focalLength: 1.3
+  fov: 1.7
   upVec: [0,1,0]
+  defocusAngle: 0.17
