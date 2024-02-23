@@ -1,3 +1,8 @@
 samples: 9
 height: 270
 width: 480
+camera:
+  origin: [0, 150, 0]
+  looking: [0, 0, 0]
+  fov: 1
+  vW: 3.5

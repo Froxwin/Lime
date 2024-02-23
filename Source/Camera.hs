@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+
 module Camera where
 
 import           Data.List                      ( sortBy )
@@ -14,10 +15,21 @@ import           Vector                         ( (<+>)
                                                 , unitVector
                                                 )
 
+data Camera = Camera
+  { origin  :: Vector
+  , looking :: Vector
+  , fov     :: Double
+  , vW      :: Double
+  }
+  deriving (Show, Generic)
+
+instance FromJSON Camera
+
 data Scene = Scene
   { width   :: Double
   , height  :: Double
   , samples :: Double
+  , camera  :: Camera
   }
   deriving (Show, Generic)
 
@@ -78,17 +90,17 @@ render s ls =
     cameraOrigin
       <-> (2 </> horizontal)
       <-> (2 </> vertical)
-      <+> Vector 0 0 focalLength
+      <+> (focalLength <.> unitVector (looking (camera s) <-> cameraOrigin)) -- TODO: Fix accounting for camera position
   sampleSquare =
     [-(sqrt samplesPerPixel - 1) / 2 .. (sqrt samplesPerPixel - 1) / 2]
   imgWidth        = width s
   imgHeight       = height s
   aspectRatio     = width s / height s
-  viewportHeight  = 2
-  viewportWidth   = aspectRatio * viewportHeight
-  focalLength     = 1
   samplesPerPixel = samples s
-  cameraOrigin    = Vector 0 0 0
+  cameraOrigin    = origin $ camera s
+  focalLength     = fov $ camera s
+  viewportWidth   = vW $ camera s
+  viewportHeight  = viewportWidth / aspectRatio
   horizontal      = Vector viewportWidth 0 0
   vertical        = Vector 0 viewportHeight 0
 

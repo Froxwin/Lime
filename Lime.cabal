@@ -41,8 +41,9 @@ library
     exposed-modules:
         Camera
         Engine
-        Things.Sphere
         Ray
+        Things.Ring
+        Things.Sphere
         Vector
 
 executable LimeExe

@@ -1,11 +1,18 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Vector where
+import           Data.Yaml                      ( FromJSON(parseJSON)
+                                                , Parser
+                                                , Value
+                                                )
+import           GHC.Generics                   ( Generic )
 
 data Vector = Vector
   { vx :: Double
   , vy :: Double
   , vz :: Double
   }
-  deriving Eq
+  deriving (Eq, Generic)
 
 (<+>), (<->) :: Vector -> Vector -> Vector
 (<+>) (Vector x y z) (Vector x' y' z') = Vector (x + x') (y + y') (z + z')
@@ -34,3 +41,13 @@ unitVector v = magnitude v </> v
 instance Ord Vector where
   (<=) :: Vector -> Vector -> Bool
   a <= b = magnitude a <= magnitude b
+
+instance Show Vector where
+  show :: Vector -> String
+  show (Vector x y z) = show [x, y, z]
+
+instance FromJSON Vector where
+  parseJSON :: Value -> Parser Vector
+  parseJSON v = do
+    [x, y, z] <- parseJSON v
+    return $ Vector x y z
