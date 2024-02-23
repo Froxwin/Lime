@@ -13,6 +13,7 @@ import           System.IO                      ( hClose
                                                 )
 import           Vector                         ( Vector(Vector) )
 
+-- | List of all objects in world
 objects :: [Object]
 objects = [sphere (Vector 0 (-100.5) 0) 100, sphere (Vector 0 0.5 2) 1]
 

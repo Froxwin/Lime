@@ -11,31 +11,22 @@ import           Vector                         ( (<+>)
                                                 , unitVector
                                                 )
 
-aspectRatio :: Double
 imgWidth, imgHeight :: Integer
-aspectRatio = 16 / 9
+aspectRatio :: Double
 imgWidth = 512
 imgHeight = round $ fromInteger imgWidth / aspectRatio
+aspectRatio = 16 / 9
 
-viewportHeight, viewportWidth, focalLength :: Double
+viewportHeight, viewportWidth, focalLength, samplesPerPixel :: Double
 viewportHeight = 2
 viewportWidth = aspectRatio * viewportHeight
 focalLength = 1
+samplesPerPixel = 9
 
-cameraOrigin, horizontal, vertical, bottomLeft :: Vector
+cameraOrigin, horizontal, vertical :: Vector
 cameraOrigin = Vector 0 0 0
 horizontal = Vector viewportWidth 0 0
 vertical = Vector 0 viewportHeight 0
-bottomLeft =
-  cameraOrigin
-    <-> (2 </> horizontal)
-    <-> (2 </> vertical)
-    <+> Vector 0 0 focalLength
-
--- List of xs and ys of viewport
-u, v :: [Double]
-u = map (/ fromIntegral imgWidth) [0 .. fromIntegral imgWidth - 1]
-v = reverse $ map (/ fromIntegral imgHeight) [0 .. fromIntegral imgHeight - 1]
 
 bottomColor, topColor :: Vector
 bottomColor = Vector 1.0 1.0 1.0
@@ -43,7 +34,7 @@ topColor = Vector 0.5 0.7 1.0
 
 type Object = Ray -> Double -> Double -> Maybe (Vector, Vector)
 
--- left to right top to bottom
+-- | The 'rayColor' function computes the color of a ray.
 rayColor :: Ray -> [Object] -> Color
 rayColor r ls =
   let (Vector tx ty tz)
@@ -57,42 +48,59 @@ rayColor r ls =
     (hitting r 0 (1 / 0))
     ls
 
-samplesPerPixel :: Double
-samplesPerPixel = 9
-sampleSquare :: [Double]
-sampleSquare =
-  [-(sqrt samplesPerPixel - 1) / 2 .. (sqrt samplesPerPixel - 1) / 2]
+{-|
+  The 'render' function generates a list of rays directed from the camera to the
+  viewport.
 
+  The generation is done __left-to-right__ and __top-to-bottom__.
+
+  The function implements anti-aliasing via grid supersampling with sample size
+  'samplesPerPixel'.
+-}
 render :: [Object] -> [Color]
 render ls =
-  [ foldl
-      addColor
-      (Color 0 0 0)
-      [ rayColor (Ray cameraOrigin rayDirection) ls
-      | sx <- sampleSquare
-      , sy <- sampleSquare
-      , let rayDirection =
-              bottomLeft
-                <+> ((ui + (sx / fromIntegral imgWidth)) <.> horizontal)
-                <+> ((vi + (sy / fromIntegral imgWidth)) <.> vertical)
-                <-> cameraOrigin
-      ]
-  | vi <- v
-  , ui <- u
+  [ (\(Color r g b) ->
+      Color (r / samplesPerPixel) (g / samplesPerPixel) (b / samplesPerPixel)
+    )
+      $ foldl
+          addColor
+          (Color 0 0 0)
+          [ rayColor (Ray cameraOrigin rayDirection) ls
+          | sx <- sampleSquare
+          , sy <- sampleSquare
+          , let rayDirection =
+                  bottomLeft
+                    <+> ((ui + (sx / fromIntegral imgWidth)) <.> horizontal)
+                    <+> ((vi + (sy / fromIntegral imgWidth)) <.> vertical)
+                    <-> cameraOrigin
+          ]
+  | vi <- reverse $ scanline $ fromIntegral imgHeight
+  , ui <- scanline $ fromIntegral imgWidth
   ]
+ where
+  scanline q = map (/ q) [0 .. q - 1]
+  bottomLeft =
+    cameraOrigin
+      <-> (2 </> horizontal)
+      <-> (2 </> vertical)
+      <+> Vector 0 0 focalLength
+  sampleSquare =
+    [-(sqrt samplesPerPixel - 1) / 2 .. (sqrt samplesPerPixel - 1) / 2]
 
+-- | Represents a rgb color type
 data Color = Color
-  { red   :: Double
-  , green :: Double
-  , blue  :: Double
+  { red   :: Double -- ^ The red component of a color
+  , green :: Double -- ^ The green component of a color
+  , blue  :: Double -- ^ The blue component of a color
   }
   deriving Eq
 
 instance Show Color where
   show :: Color -> String
   show (Color r g b) = concat $ (flip $ zipWith (++)) [" ", " ", ""] $ map
-    (show . round . (/ samplesPerPixel) . (* 255.9))
+    (show . round . (* 255.9))
     [r, g, b]
 
+-- | Adds two colors by adding their respective rgb components
 addColor :: Color -> Color -> Color
 (Color r g b) `addColor` (Color r' g' b') = Color (r + r') (g + g') (b + b')
