@@ -1,7 +1,10 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Camera where
 
 import           Data.List                      ( sortBy )
 import           Data.Maybe                     ( mapMaybe )
+import           Data.Yaml                      ( FromJSON )
+import           GHC.Generics                   ( Generic )
 import           Ray                            ( Ray(Ray, direction) )
 import           Vector                         ( (<+>)
                                                 , (<->)
@@ -11,31 +14,23 @@ import           Vector                         ( (<+>)
                                                 , unitVector
                                                 )
 
-imgWidth, imgHeight :: Integer
-aspectRatio :: Double
-imgWidth = 512
-imgHeight = round $ fromInteger imgWidth / aspectRatio
-aspectRatio = 16 / 9
+data Scene = Scene
+  { width   :: Double
+  , height  :: Double
+  , samples :: Double
+  }
+  deriving (Show, Generic)
 
-viewportHeight, viewportWidth, focalLength, samplesPerPixel :: Double
-viewportHeight = 2
-viewportWidth = aspectRatio * viewportHeight
-focalLength = 1
-samplesPerPixel = 9
-
-cameraOrigin, horizontal, vertical :: Vector
-cameraOrigin = Vector 0 0 0
-horizontal = Vector viewportWidth 0 0
-vertical = Vector 0 viewportHeight 0
+instance FromJSON Scene
 
 bottomColor, topColor :: Vector
 bottomColor = Vector 1.0 1.0 1.0
 topColor = Vector 0.5 0.7 1.0
 
-type Object = Ray -> Double -> Double -> Maybe (Vector, Vector)
+type Thing = Ray -> Double -> Double -> Maybe (Vector, Vector)
 
 -- | The 'rayColor' function computes the color of a ray.
-rayColor :: Ray -> [Object] -> Color
+rayColor :: Ray -> [Thing] -> Color
 rayColor r ls =
   let (Vector tx ty tz)
         | not (null hits) = 0.5 <.> (head hits <+> Vector 1 1 1)
@@ -57,8 +52,8 @@ rayColor r ls =
   The function implements anti-aliasing via grid supersampling with sample size
   'samplesPerPixel'.
 -}
-render :: [Object] -> [Color]
-render ls =
+render :: Scene -> [Thing] -> [Color]
+render s ls =
   [ (\(Color r g b) ->
       Color (r / samplesPerPixel) (g / samplesPerPixel) (b / samplesPerPixel)
     )
@@ -70,12 +65,12 @@ render ls =
           , sy <- sampleSquare
           , let rayDirection =
                   bottomLeft
-                    <+> ((ui + (sx / fromIntegral imgWidth)) <.> horizontal)
-                    <+> ((vi + (sy / fromIntegral imgWidth)) <.> vertical)
+                    <+> ((ui + (sx / imgWidth)) <.> horizontal)
+                    <+> ((vi + (sy / imgWidth)) <.> vertical)
                     <-> cameraOrigin
           ]
-  | vi <- reverse $ scanline $ fromIntegral imgHeight
-  , ui <- scanline $ fromIntegral imgWidth
+  | vi <- reverse $ scanline imgHeight
+  , ui <- scanline imgWidth
   ]
  where
   scanline q = map (/ q) [0 .. q - 1]
@@ -86,6 +81,16 @@ render ls =
       <+> Vector 0 0 focalLength
   sampleSquare =
     [-(sqrt samplesPerPixel - 1) / 2 .. (sqrt samplesPerPixel - 1) / 2]
+  imgWidth        = width s
+  imgHeight       = height s
+  aspectRatio     = width s / height s
+  viewportHeight  = 2
+  viewportWidth   = aspectRatio * viewportHeight
+  focalLength     = 1
+  samplesPerPixel = samples s
+  cameraOrigin    = Vector 0 0 0
+  horizontal      = Vector viewportWidth 0 0
+  vertical        = Vector 0 viewportHeight 0
 
 -- | Represents a rgb color type
 data Color = Color

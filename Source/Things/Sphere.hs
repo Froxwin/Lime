@@ -1,6 +1,6 @@
-module Objects.Sphere where
+module Things.Sphere where
 
-import           Camera                         ( Object )
+import           Camera                         ( Thing )
 import           Ray                            ( Ray(Ray)
                                                 , rayAt
                                                 )
@@ -11,7 +11,7 @@ import           Vector                         ( (<->)
                                                 , unitVector
                                                 )
 
-sphere :: Vector -> Double -> Object
+sphere :: Vector -> Double -> Thing
 sphere center radius ray tMin tMax
   | delta < 0 = Nothing
   | otherwise = if t' < t
