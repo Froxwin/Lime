@@ -5,10 +5,15 @@ import           Camera                         ( Scene(..)
                                                 , render
                                                 )
 import           Data.Yaml                      ( decodeFileEither )
+import           System.Directory               ( removeFile )
 import           System.IO                      ( hClose
                                                 , hPrint
                                                 , hPutStrLn
                                                 , openTempFile
+                                                )
+import           System.Process                 ( createProcess
+                                                , proc
+                                                , waitForProcess
                                                 )
 import           Things.Sphere                  ( sphere )
 import           Vector                         ( Vector(Vector) )
@@ -23,9 +28,12 @@ readScene = either (error . show) id <$> decodeFileEither "./scene.yaml"
 ignite :: IO ()
 ignite = do
   scene       <- readScene
-  (p, handle) <- openTempFile "." "temp.ppm"
+  (p, handle) <- openTempFile "." "temp"
   hPutStrLn handle
     $ concat ["P3\n", show (width scene), " ", show (height scene), " 255\n"]
   mapM_ (hPrint handle) $ render scene objects
   hClose handle
-  putStrLn $ "[ \x1b[32mSaved to " ++ p ++ "\x1b[0m ]"
+  (_, _, _, ph) <- createProcess (proc "ffmpeg.exe" ["-i", p, p ++ ".png"])
+  _             <- waitForProcess ph
+  _             <- removeFile p
+  putStrLn $ "[ \x1b[32mSaved to " ++ p ++ ".png" ++ "\x1b[0m ]"

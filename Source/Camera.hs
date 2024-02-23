@@ -12,14 +12,16 @@ import           Vector                         ( (<+>)
                                                 , (<.>)
                                                 , (</>)
                                                 , Vector(Vector, vy)
+                                                , cross
                                                 , unitVector
                                                 )
 
 data Camera = Camera
-  { origin  :: Vector
-  , looking :: Vector
-  , fov     :: Double
-  , vW      :: Double
+  { origin      :: Vector
+  , looking     :: Vector
+  , focalLength :: Double
+  , fov         :: Double
+  , upVec       :: Vector
   }
   deriving (Show, Generic)
 
@@ -86,23 +88,27 @@ render s ls =
   ]
  where
   scanline q = map (/ q) [0 .. q - 1]
-  bottomLeft =
-    cameraOrigin
-      <-> (2 </> horizontal)
-      <-> (2 </> vertical)
-      <+> (focalLength <.> unitVector (looking (camera s) <-> cameraOrigin)) -- TODO: Fix accounting for camera position
   sampleSquare =
     [-(sqrt samplesPerPixel - 1) / 2 .. (sqrt samplesPerPixel - 1) / 2]
   imgWidth        = width s
   imgHeight       = height s
   aspectRatio     = width s / height s
   samplesPerPixel = samples s
-  cameraOrigin    = origin $ camera s
-  focalLength     = fov $ camera s
-  viewportWidth   = vW $ camera s
-  viewportHeight  = viewportWidth / aspectRatio
-  horizontal      = Vector viewportWidth 0 0
-  vertical        = Vector 0 viewportHeight 0
+
+  -- camera
+  Camera cameraOrigin lookingAt fl f up = camera s
+  w               = unitVector (cameraOrigin <-> lookingAt)
+  u               = unitVector $ cross up w
+  v               = cross w u
+
+  -- viewport
+  h               = tan (f / 2)
+  viewportWidth   = viewportHeight * aspectRatio
+  viewportHeight  = 2 * h * fl
+  horizontal      = viewportWidth <.> u
+  vertical        = viewportHeight <.> v
+  bottomLeft =
+    cameraOrigin <-> (2 </> horizontal) <-> (2 </> vertical) <-> (fl <.> w)
 
 -- | Represents a rgb color type
 data Color = Color
@@ -115,7 +121,7 @@ data Color = Color
 instance Show Color where
   show :: Color -> String
   show (Color r g b) = concat $ (flip $ zipWith (++)) [" ", " ", ""] $ map
-    (show . round . (* 255.9))
+    (show . round . (* 255))
     [r, g, b]
 
 -- | Adds two colors by adding their respective rgb components
