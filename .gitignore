@@ -1,5 +1,4 @@
 /dist-newstyle
-*.ppm
-*.png
+tem*
 *.log
 *.exe

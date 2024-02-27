@@ -4,7 +4,7 @@
 - [x] Multiple Objects
 - [x] Anti Aliasing
 - [x] Positionable Camera
-- [x] Defocus Blurring
+- [ ] Defocus Blurring
 - [ ] Parallal Processing
 - [ ] Light and Materials
 - [ ] Textures

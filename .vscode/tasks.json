@@ -4,7 +4,7 @@
     {
       "label": "Test",
       "type": "shell",
-      "command": "cabal test",
+      "command": "cabal test --test-show-details=streaming --test-option=--color=always",
       "group": {
         "kind": "test",
         "isDefault": true
@@ -49,6 +49,12 @@
       "label": "Doc",
       "type": "shell",
       "command": "cabal haddock",
+      "problemMatcher": []
+    },
+    {
+      "label": "Hoogle",
+      "type": "shell",
+      "command": "hoogle generate --local=dist-newstyle/build/x86_64-windows/ghc-9.4.8/Lime-0.1.0.0/doc/html/Lime/",
       "problemMatcher": []
     }
   ]

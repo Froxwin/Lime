@@ -4,11 +4,11 @@ import           Camera                         ( Scene(..)
                                                 , Thing
                                                 , render
                                                 )
+import           Data.List                      ( intercalate )
 import           Data.Yaml                      ( decodeFileEither )
 import           System.Directory               ( removeFile )
 import           System.IO                      ( hClose
-                                                , hPrint
-                                                , hPutStrLn
+                                                , hPutStr
                                                 , openTempFile
                                                 )
 import           System.Process                 ( createProcess
@@ -19,19 +19,26 @@ import           Things.Sphere                  ( sphere )
 import           Vector                         ( Vector(Vector) )
 
 -- | List of all objects in world
-objects :: [Thing]
-objects = [sphere (Vector 0 (-100.5) 0) 100, sphere (Vector 0 1 0) 1, sphere (Vector 3 1 0) 1]
+world :: [Thing]
+world =
+  [ sphere (Vector 0 (-100.5) 0) 100
+  , sphere (Vector 0 1 0)        1
+  , sphere (Vector 3 1 0)        1
+  ]
 
-readScene :: IO Scene
-readScene = either (error . show) id <$> decodeFileEither "./scene.yaml"
+-- | Generates content for the ppm file
+makeImageFile :: Scene -> [Thing] -> [Char]
+makeImageFile scene objects =
+  concat ["P3\n", show (width scene), " ", show (height scene), " 255\n"]
+    ++ intercalate "\n" (map show $ render scene objects)
 
+-- | Ignites the engine; renders the image -> makes ppm file -> calls ffmpeg to
+--   make png -> removes ppm
 ignite :: IO ()
 ignite = do
-  scene       <- readScene
+  scene       <- either (error . show) id <$> decodeFileEither "./scene.yaml"
   (p, handle) <- openTempFile "." "temp"
-  hPutStrLn handle
-    $ concat ["P3\n", show (width scene), " ", show (height scene), " 255\n"]
-  mapM_ (hPrint handle) $ render scene objects
+  hPutStr handle $ makeImageFile scene world
   hClose handle
   (_, _, _, ph) <- createProcess (proc "ffmpeg.exe" ["-i", p, p ++ ".png"])
   _             <- waitForProcess ph

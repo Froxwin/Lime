@@ -1,1 +1,1 @@
-ls -Filter "*.ppm" | Remove-Item
+ls -Filter "tem*" | Remove-Item
