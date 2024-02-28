@@ -9,6 +9,9 @@ Silly Raytracer
 
 ## Usage
 
+> [!IMPORTANT]
+> ffmpeg is required in the system path
+
 Scene reference
 ```yaml
 samples: 50   # Number of samples for a single pixel, set to 1 to turn off anti-aliasing
