@@ -36,7 +36,7 @@ makeImageFile scene objects =
 --   make png -> removes ppm
 ignite :: IO ()
 ignite = do
-  scene       <- either (error . show) id <$> decodeFileEither "./scene.yaml"
+  scene       <- either (error . show) id <$> decodeFileEither "./Examples/Scene.yaml"
   (p, handle) <- openTempFile "." "temp"
   hPutStr handle $ makeImageFile scene world
   hClose handle

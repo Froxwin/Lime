@@ -86,8 +86,8 @@ render s ls =
       `vsub` (2 `vdiv` vertical)
       `vsub` (fl `vmul` w)
 
-  -- TODO add defocus blurring
-  -- FIXME the supersampler acts weird sometimes
+  -- TODO: add defocus blurring
+  -- FIXME: the supersampler acts weird sometimes
 
 -- | Represents camera configuration
 data Camera = Camera
