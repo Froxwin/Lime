@@ -77,7 +77,7 @@ ignite = do
   (p, handle) <- openTempFile "." "temp"
   hPutStr handle $ makeImageFile scene world
   hClose handle
-  (_, _, _, ph) <- createProcess (proc "ffmpeg.exe" ["-i", p, o ++ p ++ ".png"])
+  (_, _, _, ph) <- createProcess (proc "ffmpeg.exe" ["-i", p, o ++ ".png"])
   _             <- waitForProcess ph
   _             <- removeFile p
-  putStrLn $ "[ \x1b[32mSaved to " ++ p ++ ".png" ++ "\x1b[0m ]"
+  putStrLn $ "[ \x1b[32mSaved to " ++ o ++ ".png" ++ "\x1b[0m ]"
