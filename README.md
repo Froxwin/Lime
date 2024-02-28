@@ -30,44 +30,12 @@ camera:
 
 See [TODO](TODO.md)
 
+### Animating
+
 With a small shell command Lime can be made to animate.
 
-An example script to generate a moving camera. See [script](Scripts/Stitch.ps1)
-
-```ps1
-function getFileContent ($param) {
-  $a = @"
-samples: 50
-height:  270
-width:   480
-camera:
-  cameraOrigin: [0, 1.2, -1.3]
-  lookingAt:    [$($param), 1, 0]
-  focalLength:  1
-  fov:          1.57
-  cameraUpVec:  [0, 1, 0]
-  defocusAngle: 0.08
-"@
-  return $a
-}
-
-for ($i = -5; $i -lt 5; $i+=0.1) {
-  New-Item "some_dir\$($frame).yaml"
-  $c = getFileContent($i)
-  Add-Content -Path "some_dir\$($frame).yaml" -Value $c
-  $frame++
-}
-```
-
-Any parameter can be varied in the same way
-
-This command would render each frame
-```ps1
-Get-ChildItem "some_dir" | ForEach-Object {
-  path_to_lime -i "some_dir\$($_.BaseName).yaml" -o "somedir\$($_.BaseName)"
-}
-```
-
+An example script is given, see [script](Scripts/Stitch.ps1).
+Any parameter can be varied in the same way.
 Running ffmpeg with the following arguments would generate the video
 
 ```ps1
@@ -80,6 +48,6 @@ Run `cabal haddock` in the project directory to build the documentation
 
 ## Example Render
 
-![Example Scene](Examples/Scene.png)
-
-<video controls src="Examples/Scene.mp4" title="Example Animation"></video>
+| Example Scene | Example Animation |
+| ------------- | ----------------- |
+| ![Example Scene](Examples/Scene.png) | ![Example Animation](Examples/Scene.gif) |
