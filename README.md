@@ -10,7 +10,7 @@ Silly Raytracer
 ## Usage
 
 > [!IMPORTANT]
-> ffmpeg is required in the system path
+> Requires ffmpeg in the system path
 
 Scene reference
 ```yaml
@@ -33,14 +33,15 @@ See [TODO](TODO.md)
 ### Animating
 
 With a small shell command Lime can be made to animate.
-
-An example script is given, see [script](Scripts/Stitch.ps1).
-Any parameter can be varied in the same way.
-Running ffmpeg with the following arguments would generate the video
+For example see [script](Scripts/Stitch.ps1).
+You can vary any parameter in the same way.
+Running ffmpeg with the following arguments generates the video.
 
 ```ps1
 ffmpeg.exe -framerate some_fps -i "some_dir\%d.png" some_video.mp4
 ```
+
+See [example](#example-render)
 
 ## Documentation
 

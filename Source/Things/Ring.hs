@@ -1,15 +1,16 @@
 module Things.Ring where
 
-import           Camera                         ( Thing )
 import           Ray                            ( Ray(Ray)
                                                 , rayAt
                                                 )
+import           Things.Types                   ( Thing )
 import           Vector                         ( Vector
                                                 , dot
                                                 , magnitude
                                                 , normalize
                                                 , vsub
                                                 )
+
 ring :: Vector -> Double -> Thing
 ring center radius ray tMin tMax
   | delta < 0 = Nothing

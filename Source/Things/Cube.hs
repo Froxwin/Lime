@@ -1,4 +1,4 @@
-module Things.Sphere where
+module Things.Cube where
 
 import           Ray                            ( Ray(Ray)
                                                 , rayAt

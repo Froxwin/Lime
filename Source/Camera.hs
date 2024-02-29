@@ -7,6 +7,7 @@ import           Data.Maybe                     ( mapMaybe )
 import           Data.Yaml                      ( FromJSON )
 import           GHC.Generics                   ( Generic )
 import           Ray                            ( Ray(Ray, rayDirection) )
+import           Things.Types                   ( WorldObject, Thing )
 import           Vector                         ( Vector(Vector, vy)
                                                 , cross
                                                 , normalize
@@ -108,6 +109,7 @@ data Scene = Scene
   , height  :: Double -- ^ The height of rendered image
   , samples :: Double -- ^ Number of samples per pixel
   , camera  :: Camera -- ^ Configuration of camera
+  , world   :: [WorldObject]
   }
   deriving (Show, Generic)
 
@@ -134,5 +136,3 @@ addColor (Color r g b) (Color r' g' b') = Color (r + r') (g + g') (b + b')
 -- | Scales a color by scaling all its color channels
 scaleColor :: Double -> Color -> Color
 scaleColor t (Color r g b) = Color (t * r) (t * g) (t * b)
-
-type Thing = Ray -> Double -> Double -> Maybe (Vector, Vector)

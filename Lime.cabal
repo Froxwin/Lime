@@ -33,7 +33,6 @@ common flags
         -Wall -Wno-type-defaults -threaded -Wcompat -Widentities
         -Wincomplete-record-updates -Wincomplete-uni-patterns
         -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
-        -rtsopts -with-rtsopts=-N
 
     default-extensions: InstanceSigs
 
@@ -44,15 +43,19 @@ library
         Camera
         Engine
         Ray
+        Things.Thing
         Things.Ring
         Things.Sphere
+        Things.Cube
+        Things.Types
         Vector
 
-executable LimeExe
+executable Lime
     import:         depends, flags
     hs-source-dirs: App
     main-is:        Main.hs
-    build-depends:  Lime
+    build-depends:  Lime, cmdargs
+    ghc-options:    -rtsopts -with-rtsopts=-N
 
 test-suite Alkali
     import:         depends

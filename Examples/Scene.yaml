@@ -8,3 +8,13 @@ camera:
   fov:          1.57
   cameraUpVec:  [0, 1, 0]
   defocusAngle: 0.08
+world:
+  - tag: Sphere
+    center: [0, -100.5, 0]
+    radius: 100
+  - tag: Sphere
+    center: [0, 1, 0]
+    radius: 1
+  - tag: Sphere
+    center: [3, 1, 0]
+    radius: 1

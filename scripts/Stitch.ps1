@@ -1,7 +1,3 @@
-Get-ChildItem "../Examples/" | ForEach-Object {
-  .\dist-newstyle\build\x86_64-windows\ghc-9.4.8\Lime-0.1.0.0\x\LimeExe\build\LimeExe\LimeExe.exe -i "..\Examples\$($_.BaseName).yaml" -o "..\Examples\$($_.BaseName)"
-}
-
 function getFileContent ($param) {
   $a = @"
 samples: 50
@@ -18,9 +14,14 @@ camera:
   return $a
 }
 
+$frame = 1
 for ($i = -5; $i -lt 5; $i+=0.1) {
-  New-Item "..\Examples\$($frame).yaml"
+  New-Item ".\temp\$($frame).yaml"
   $c = getFileContent($i)
-  Add-Content -Path "..\Examples\$($frame).yaml" -Value $c
+  Add-Content -Path ".\temp\$($frame).yaml" -Value $c
   $frame++
+}
+
+Get-ChildItem "./temp/" | ForEach-Object -Parallel {
+  .\dist-newstyle\build\x86_64-windows\ghc-9.4.8\Lime-0.1.0.0\x\LimeExe\build\LimeExe\LimeExe.exe -i ".\temp\$($_.BaseName).yaml" -o ".\temp\$($_.BaseName).png"
 }
