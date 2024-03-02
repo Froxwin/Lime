@@ -12,23 +12,18 @@ Silly Raytracer
 > [!IMPORTANT]
 > Requires ffmpeg in the system path
 
-Scene reference
-```yaml
-samples: 50   # Number of samples for a single pixel, set to 1 to turn off anti-aliasing
-height:  270  # Image Height
-width:   480  # Image Width
-camera:
-  cameraOrigin: [0, 1.2, -1.3]  # Camera origin vector
-  lookingAt:    [5, 1, 0]       # Point camera is looking at
-  focalLength:  1               # Focal distance
-  fov:          1.57            # Horizontal view angle
-  cameraUpVec:  [0, 1, 0]       # Vector perpendicular to camera horizon
-  defocusAngle: 0.08            # Angle beyond which the camera defocuses objects
+Use `cabal` to build the project.
+After building run it with
+```ps1
+cabal run Lime -- [-i|--input=PATH] [-o|--output=PATH] [-f|--force=BOOL]
 ```
+This will also build if not already built. Run `cabal run Lime -- --help` for more help
+
+For reference scenes see [examples](Examples)
 
 ## Features
 
-See [TODO](TODO.md)
+See [TODO](TODO.org)
 
 ### Animating
 
@@ -49,6 +44,6 @@ Run `cabal haddock` in the project directory to build the documentation
 
 ## Example Render
 
-| Example Scene | Example Animation |
-| ------------- | ----------------- |
+| Example Scene                        | Example Animation                        |
+| ------------------------------------ | ---------------------------------------- |
 | ![Example Scene](Examples/Scene.png) | ![Example Animation](Examples/Scene.gif) |

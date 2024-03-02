@@ -1,29 +1,27 @@
 module Engine where
 
-import           Camera                         ( Scene(..)
+import           Camera                         ( Scene(height, width)
                                                 , render
                                                 )
 import           Data.List                      ( intercalate )
 import           Data.Yaml                      ( decodeFileEither )
-import           GHC.IO.Handle                  ( hClose
+import           System.Exit                    ( ExitCode(ExitSuccess) )
+import           System.IO                      ( hClose
                                                 , hGetContents
                                                 , hPutStr
                                                 )
-import           System.Exit                    ( ExitCode(ExitSuccess) )
 import           System.Process                 ( CreateProcess(std_in, std_out)
                                                 , StdStream(CreatePipe)
                                                 , createProcess
                                                 , proc
                                                 , waitForProcess
                                                 )
-import           Things.Thing                   ( parseWorldObject )
-import           Things.Types                   ( Thing )
 
 -- | Generates content for the ppm file
-makeImageFile :: Scene -> [Thing] -> String
-makeImageFile scene objects =
+makeImageFile :: Scene -> String
+makeImageFile scene =
   concat ["P3\n", show (width scene), " ", show (height scene), " 255\n"]
-    ++ intercalate "\n" (map show $ render scene objects)
+    ++ intercalate "\n" (map show (render scene))
 
 -- | Ignites the engine
 ignite :: String -> String -> Bool -> IO ()
@@ -36,7 +34,7 @@ ignite input output force = do
     { std_in  = CreatePipe
     , std_out = CreatePipe
     }
-  hPutStr hIn $ makeImageFile scene $ map parseWorldObject $ world scene
+  hPutStr hIn $ makeImageFile scene
   hClose hIn
   outp <- hGetContents hOut
   putStr outp

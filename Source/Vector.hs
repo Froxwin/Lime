@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 module Vector where
+
 import           Data.Yaml                      ( FromJSON(parseJSON)
                                                 , Parser
                                                 , Value

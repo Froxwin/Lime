@@ -5,6 +5,7 @@ import           Camera
 import           Engine
 import           Ray
 import           Things.Sphere
+import           Things.Types
 import           Vector
 
 main :: IO ()
@@ -25,25 +26,21 @@ mockScene = Scene
                      , focalLength  = 1
                      , defocusAngle = 0.08
                      }
+  , world   = [ Sphere (Vector 0 (-100.5) 0) 100
+              , Sphere (Vector 0 1 0)        1
+              , Sphere (Vector 3 1 0)        1
+              ]
   }
-
-mockWorld :: [Thing]
-mockWorld =
-  [ sphere (Vector 0 (-100.5) 0) 100
-  , sphere (Vector 0 1 0)        1
-  , sphere (Vector 3 1 0)        1
-  ]
 
 cameraTests :: TestTree
 cameraTests = testGroup
   "Camera Tests"
   [ testCase "Valid Render"
-  $  all (all (<= 1) . (\(Color r g b) -> [r, g, b]))
-         (render mockScene mockWorld)
+  $  all (all (<= 1) . (\(Color r g b) -> [r, g, b])) (render mockScene)
   @? "Checks if all color values are less than one"
   , testCase "Correct Resolution" $ assertEqual
     "Checks if number of rendered pixels is correct"
-    (length (render mockScene mockWorld))
+    (length (render mockScene))
     (480 * 270)
   ]
 
@@ -65,6 +62,6 @@ engineTests = testGroup
             ++ show (height mockScene)
             ++ " 255\n"
     in  testCase "Valid File"
-        $   take (length fileHeader) (makeImageFile mockScene mockWorld)
+        $   take (length fileHeader) (makeImageFile mockScene)
         @?= fileHeader
   ]

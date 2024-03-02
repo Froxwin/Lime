@@ -7,7 +7,10 @@ import           Data.Maybe                     ( mapMaybe )
 import           Data.Yaml                      ( FromJSON )
 import           GHC.Generics                   ( Generic )
 import           Ray                            ( Ray(Ray, rayDirection) )
-import           Things.Types                   ( WorldObject, Thing )
+import           Things.Thing                   ( parseWorldObject )
+import           Things.Types                   ( Thing
+                                                , WorldObject
+                                                )
 import           Vector                         ( Vector(Vector, vy)
                                                 , cross
                                                 , normalize
@@ -42,61 +45,59 @@ rayColor r ls =
   The function implements anti-aliasing via grid supersampling with sample size
   'samplesPerPixel'.
 -}
-render :: Scene -> [Thing] -> [Color]
-render s ls =
-  [ foldl
-      addColor
-      (Color 0 0 0)
-      [ (1 / samplesPerPixel) `scaleColor` rayColor (Ray camOrigin direction) ls
-      | sx <- sampleSquare
-      , sy <- sampleSquare
-      , let pixelSample =
-              bottomLeft
-                `vadd` ((ui + (sx / imgWidth)) `vmul` horizontal)
-                `vadd` ((vi + (sy / imgHeight)) `vmul` vertical)
-      , let rayOrigin = camOrigin
-      , let direction = pixelSample `vsub` rayOrigin
-      ]
-  | vi <- reverse $ scanline imgHeight
-  , ui <- scanline imgWidth
-  ]
+render :: Scene -> [Color]
+render (Scene imgWidth imgHeight nsamples (Camera origin lookAt fl f up da) wrld)
+  = [ foldl
+        addColor
+        (Color 0 0 0)
+        [ (1 / (fromIntegral (length sampleSquare) ^ 2)) `scaleColor` rayColor
+            (Ray diskSample (pixelSample `vsub` diskSample))
+            (map parseWorldObject wrld)
+        | sx <- sampleSquare
+        , sy <- sampleSquare
+        , let pixelSample =
+                bottomLeft
+                  `vadd` ((ui + (sx / imgWidth)) `vmul` horizontal)
+                  `vadd` ((vi + (sy / imgHeight)) `vmul` vertical)
+        , let diskSample =
+                origin `vadd` (sx `vmul` diskU) `vadd` (sy `vmul` diskV)
+        ]
+    | vi <- reverse $ scanline imgHeight
+    , ui <- scanline imgWidth
+    ]
  where
   scanline q = map (/ q) [0 .. q - 1]
   sampleSquare =
-    [-1, (-1 + (1 / ((((samplesPerPixel ** (1 / 2)) - 3) / 2) + 1))) .. 1]
-  imgWidth        = width s
-  imgHeight       = height s
-  aspectRatio     = width s / height s
-  samplesPerPixel = samples s
+    [-1, (-1 + (1 / ((((nsamples ** (1 / 2)) - 3) / 2) + 1))) .. 1]
 
   -- camera
-  Camera camOrigin looking fl f up da = camera s
-  w               = normalize (camOrigin `vsub` looking)
-  u               = normalize $ cross up w
-  v               = cross w u
+  w              = normalize (origin `vsub` lookAt)
+  u              = normalize $ cross up w
+  v              = cross w u
 
   -- viewport
-  h               = tan (f / 2)
-  viewportHeight  = 2 * h * fl
-  viewportWidth   = viewportHeight * aspectRatio
-  horizontal      = viewportWidth `vmul` u
-  vertical        = viewportHeight `vmul` v
+  viewportHeight = 2 * tan (f / 2) * fl
+  viewportWidth  = viewportHeight * (imgWidth / imgHeight)
+  horizontal     = viewportWidth `vmul` u
+  vertical       = viewportHeight `vmul` v
   bottomLeft =
-    camOrigin
+    origin
       `vsub` (2 `vdiv` horizontal)
       `vsub` (2 `vdiv` vertical)
       `vsub` (fl `vmul` w)
 
-  -- TODO: add defocus blurring
-  -- FIXME: the supersampler acts weird sometimes
+  -- aperture
+  diskRadius = fl * tan (da / 2)
+  diskU      = diskRadius `vmul` u
+  diskV      = diskRadius `vmul` v
 
 -- | Represents camera configuration
 data Camera = Camera
-  { cameraOrigin :: Vector -- ^ Point from where the camera is looking
+  { position     :: Vector -- ^ Point from where the camera is looking
   , lookingAt    :: Vector -- ^ Point in which direction the camera is looking
   , focalLength  :: Double -- ^ Focal length of camera
   , fov          :: Double -- ^ Horizontal field of view angle
-  , cameraUpVec  :: Vector -- ^ Upward direction of camera
+  , upVector     :: Vector -- ^ Upward direction of camera
   , defocusAngle :: Double -- ^ Angle subtended by lens aperture
   }
   deriving (Show, Generic)
@@ -121,7 +122,7 @@ data Color = Color
   , green :: Double -- ^ The green component of a color
   , blue  :: Double -- ^ The blue component of a color
   }
-  deriving Eq
+  deriving (Eq, Generic)
 
 instance Show Color where
   show :: Color -> String
