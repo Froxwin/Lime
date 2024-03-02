@@ -13,28 +13,32 @@ import           Things.Types                   ( Thing
                                                 )
 import           Vector                         ( Vector(Vector, vy)
                                                 , cross
+                                                , dot
                                                 , normalize
                                                 , vadd
                                                 , vdiv
                                                 , vmul
+                                                , vneg
                                                 , vsub
                                                 )
 
 -- | The 'rayColor' function computes the color of a ray.
-rayColor :: Ray -> [Thing] -> Color
-rayColor r ls =
-  let (Vector tx ty tz)
-        | not (null hits) = 0.5 `vmul` (head hits `vadd` Vector 1 1 1)
-        | otherwise = ((1 - d) `vmul` bottomColor) `vadd` (d `vmul` topColor)
-  in  Color tx ty tz
+rayColor :: Ray -> [Thing] -> Vector -> Int -> Color
+rayColor r ls sampleRay depth
+  | depth == 0
+  = Color 0 0 0
+  | not (null hs)
+  = 0.5 `scaleColor` rayColor (Ray p (v `vadd` n)) ls sampleRay (depth - 1)
+  | otherwise
+  = ((1 - d) `scaleColor` Color 1.0 1.0 1.0)
+    `addColor` (d `scaleColor` Color 0.5 0.7 1.0)
  where
+  v = if sampleRay `dot` n > 0 then sampleRay else vneg sampleRay
   hitting ray tMin tMax f = f ray tMin tMax
-  d    = 0.5 * (vy (normalize $ rayDirection r) + 1.0)
-  hits = map fst $ sortBy (\(_, p1) (_, p2) -> compare p1 p2) $ mapMaybe
-    (hitting r 0 (1 / 0))
-    ls
-  bottomColor = Vector 1.0 1.0 1.0
-  topColor    = Vector 0.5 0.7 1.0
+  (n, p) = head hs
+  hs     = sortBy (\(_, p1) (_, p2) -> compare p1 p2)
+    $ mapMaybe (hitting r 0.1 (1 / 0)) ls
+  d = 0.5 * (vy (normalize $ rayDirection r) + 1.0)
 
 {-|
   The 'render' function generates a list of rays directed from the camera to the
@@ -46,13 +50,16 @@ rayColor r ls =
   'samplesPerPixel'.
 -}
 render :: Scene -> [Color]
-render (Scene imgWidth imgHeight nsamples (Camera origin lookAt fl f up da) wrld)
-  = [ foldl
+render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da) wrld)
+  = [ correctGamma $ foldl
         addColor
         (Color 0 0 0)
-        [ (1 / (fromIntegral (length sampleSquare) ^ 2)) `scaleColor` rayColor
-            (Ray diskSample (pixelSample `vsub` diskSample))
-            (map parseWorldObject wrld)
+        [ (1 / (fromIntegral (length sampleSquare) ^ 3))
+            `scaleColor` rayColor
+                           (Ray diskSample (pixelSample `vsub` diskSample))
+                           (map parseWorldObject wrld)
+                           (Vector sx sy sz)
+                           m
         | sx <- sampleSquare
         , sy <- sampleSquare
         , let pixelSample =
@@ -61,6 +68,7 @@ render (Scene imgWidth imgHeight nsamples (Camera origin lookAt fl f up da) wrld
                   `vadd` ((vi + (sy / imgHeight)) `vmul` vertical)
         , let diskSample =
                 origin `vadd` (sx `vmul` diskU) `vadd` (sy `vmul` diskV)
+        , sz <- sampleSquare
         ]
     | vi <- reverse $ scanline imgHeight
     , ui <- scanline imgWidth
@@ -68,7 +76,7 @@ render (Scene imgWidth imgHeight nsamples (Camera origin lookAt fl f up da) wrld
  where
   scanline q = map (/ q) [0 .. q - 1]
   sampleSquare =
-    [-1, (-1 + (1 / ((((nsamples ** (1 / 2)) - 3) / 2) + 1))) .. 1]
+    [-1, (-1 + (1 / ((((nsamples ** (1 / 3)) - 3) / 2) + 1))) .. 1]
 
   -- camera
   w              = normalize (origin `vsub` lookAt)
@@ -106,11 +114,12 @@ instance FromJSON Camera
 
 -- | Represents a world scene
 data Scene = Scene
-  { width   :: Double -- ^ The width of rendered image
-  , height  :: Double -- ^ The height of rendered image
-  , samples :: Double -- ^ Number of samples per pixel
-  , camera  :: Camera -- ^ Configuration of camera
-  , world   :: [WorldObject]
+  { width     :: Double -- ^ The width of rendered image
+  , height    :: Double -- ^ The height of rendered image
+  , samples   :: Double -- ^ Number of samples per pixel
+  , maxBounce :: Int
+  , camera    :: Camera -- ^ Configuration of camera
+  , world     :: [WorldObject]
   }
   deriving (Show, Generic)
 
@@ -129,6 +138,9 @@ instance Show Color where
   show (Color r g b) = concat $ (flip $ zipWith (++)) [" ", " ", ""] $ map
     (show . round . (* 255))
     [r, g, b]
+
+correctGamma :: Color -> Color
+correctGamma (Color r g b) = Color (sqrt r) (sqrt g) (sqrt b)
 
 -- | Adds two colors by adding their respective rgb components
 addColor :: Color -> Color -> Color

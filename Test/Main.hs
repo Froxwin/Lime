@@ -19,9 +19,9 @@ mockScene = Scene
   { width   = 480
   , samples = 10
   , height  = 270
-  , camera  = Camera { cameraUpVec  = Vector 0 1 0
+  , camera  = Camera { upVector     = Vector 0 1 0
                      , lookingAt    = Vector 0 1 0
-                     , cameraOrigin = Vector 0 1.2 (-1.3)
+                     , position     = Vector 0 1.2 (-1.3)
                      , fov          = 1.57
                      , focalLength  = 1
                      , defocusAngle = 0.08
