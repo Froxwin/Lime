@@ -1,10 +1,10 @@
-samples: 100
-height: 225
-width: 400
-maxBounce: 10
+samples: 150
+height: 315
+width: 569
+maxBounce: 50
 camera:
   position: [0, 0, -2]
-  lookingAt: [0, 0.7, 0]
+  lookingAt: [0, 0.8, 0]
   focalLength: 1
   fov: 1.57
   upVector: [0, 1, 0]
@@ -14,7 +14,7 @@ world:
     center: [0, -100.5, 0]
     radius: 100
   - tag: Sphere
-    center: [0, 0.7, 0]
+    center: [0, 0.8, 0]
     radius: 1
   - tag: Sphere
     center: [3, 0.5, 3]

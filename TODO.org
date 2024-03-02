@@ -1,19 +1,28 @@
 #+TITLE: TODO
 
-* DONE Sphere rendering
+* Objects
+** DONE Sphere rendering
         CLOSED: https://github.com/Froxwin/Lime/commit/ccf9f17611f7d992f70d2d5f56c256d4dd732c85
-* DONE Multiple Objects
+** DONE Multiple Objects
         CLOSED: https://github.com/Froxwin/Lime/commit/a70ffb67500e91cd57bd782852dd255c37206a1d
-* DONE Anti Aliasing
+** DONE Diffuse Materials
+** TODO Other Materials
+** TODO Textures
+** TODO Polygons
+** TODO Lights
+** TODO Object file parsing
+
+* Camera
+
+** DONE Anti Aliasing
         CLOSED: https://github.com/Froxwin/Lime/commit/3e9bbc3cd209f02137b0a29be4a7ea766023c64c
-* DONE Positionable Camera
+** DONE Positionable Camera
         CLOSED: https://github.com/Froxwin/Lime/commit/53f81de50ca932fe4de2afbdb7a6d4e78d0835cd
-* DONE Defocus Blurring
+** DONE Defocus Blurring
         CLOSED: https://github.com/Froxwin/Lime/commit/0c3f51caf734c0da5a2de5f8938f5cd48867ce54
-* DONE Diffuse Materials
-* TODO Light and Other Materials
-* TODO Parallal Processing
-* TODO Polygon rendering
-* TODO Object file parsing
-* TODO Textures
-* TODO Optimisation
+** TODO Motion Blur
+
+* Performance
+
+** TODO Parallal Processing
+** TODO Optimisation
