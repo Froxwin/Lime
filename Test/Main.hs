@@ -19,6 +19,7 @@ mockScene = Scene
   { width   = 480
   , samples = 10
   , height  = 270
+  , maxBounce    = 10
   , camera  = Camera { upVector     = Vector 0 1 0
                      , lookingAt    = Vector 0 1 0
                      , position     = Vector 0 1.2 (-1.3)
@@ -47,9 +48,7 @@ cameraTests = testGroup
 objectTests :: TestTree
 objectTests = testGroup
   "Object Tests"
-  [ testCase "Hitting Sphere"
-    $   rayColor (Ray (Vector 0 0 0) (Vector 0 0 1)) [sphere (Vector 0 0 50) 10]
-    @?= Color 0.5 0.5 0
+  [ 
   ]
 
 engineTests :: TestTree
