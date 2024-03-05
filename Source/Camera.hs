@@ -6,9 +6,10 @@ import           Data.List                      ( sortBy )
 import           Data.Maybe                     ( mapMaybe )
 import           Data.Yaml                      ( FromJSON )
 import           GHC.Generics                   ( Generic )
-import           Ray                            ( Ray(Ray, rayDirection) )
+import           Ray                            ( Ray(..) )
 import           Things.Thing                   ( parseWorldObject )
-import           Things.Types                   ( Thing
+import           Things.Types                   ( Color(Color)
+                                                , Thing
                                                 , WorldObject
                                                 )
 import           Vector                         ( Vector(Vector, vy)
@@ -28,16 +29,21 @@ rayColor r ls sampleRay depth
   | depth == 0
   = Color 0 0 0
   | not (null hs)
-  = 0.5 `scaleColor` rayColor (Ray p (v `vadd` n)) ls sampleRay (depth - 1)
+  = q `scaleColor'` rayColor w ls sampleRay (depth - 1)
   | otherwise
   = ((1 - d) `scaleColor` Color 1.0 1.0 1.0)
     `addColor` (d `scaleColor` Color 0.5 0.7 1.0)
  where
   v = if sampleRay `dot` n > 0 then sampleRay else vneg sampleRay
   hitting ray tMin tMax f = f ray tMin tMax
-  (n, p) = head hs
-  hs     = sortBy (\(_, p1) (_, p2) -> compare p1 p2)
-    $ mapMaybe (hitting r 0.1 (1 / 0)) ls
+  (q, w) = m v n p
+  (n, p, m) = head hs
+  hs =
+    sortBy
+        (\(_, p1, _) (_, p2, _) ->
+          compare (p1 `vsub` rayOrigin r) (p2 `vsub` rayOrigin r)
+        )
+      $ mapMaybe (hitting r 0.001 (1 / 0)) ls
   d = 0.5 * (vy (normalize $ rayDirection r) + 1.0)
 
 {-|
@@ -125,20 +131,6 @@ data Scene = Scene
 
 instance FromJSON Scene
 
--- | Represents a rgb color type
-data Color = Color
-  { red   :: Double -- ^ The red component of a color
-  , green :: Double -- ^ The green component of a color
-  , blue  :: Double -- ^ The blue component of a color
-  }
-  deriving (Eq, Generic)
-
-instance Show Color where
-  show :: Color -> String
-  show (Color r g b) = concat $ (flip $ zipWith (++)) [" ", " ", ""] $ map
-    (show . round . (* 255))
-    [r, g, b]
-
 correctGamma :: Color -> Color
 correctGamma (Color r g b) = Color (sqrt r) (sqrt g) (sqrt b)
 
@@ -149,3 +141,6 @@ addColor (Color r g b) (Color r' g' b') = Color (r + r') (g + g') (b + b')
 -- | Scales a color by scaling all its color channels
 scaleColor :: Double -> Color -> Color
 scaleColor t (Color r g b) = Color (t * r) (t * g) (t * b)
+
+scaleColor' :: Color -> Color -> Color
+scaleColor' (Color r g b) (Color r' g' b') = Color (r * r') (g * g') (b * b')

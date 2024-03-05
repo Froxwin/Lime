@@ -3,7 +3,7 @@ module Things.Sphere where
 import           Ray                            ( Ray(Ray)
                                                 , rayAt
                                                 )
-import           Things.Types                   ( Thing )
+import           Things.Types                  
 import           Vector                         ( Vector
                                                 , dot
                                                 , magnitude
@@ -11,12 +11,13 @@ import           Vector                         ( Vector
                                                 , vsub
                                                 )
 
-sphere :: Vector -> Double -> Thing
-sphere center radius ray tMin tMax
+-- sphere :: Vector -> Double -> Thing
+sphere :: Vector -> Double -> Material -> Thing
+sphere center radius m ray tMin tMax
   | delta < 0 = Nothing
   | otherwise = if t' < t
-    then (if isWithin t' then Just (normal t', point t') else Nothing)
-    else (if isWithin t then Just (normal t, point t) else Nothing)
+    then (if isWithin t' then Just (normal t', point t', m) else Nothing)
+    else (if isWithin t then Just (normal t, point t, m) else Nothing)
  where
   delta =
     ((d `dot` (a `vsub` center)) ^ 2)

@@ -1,10 +1,10 @@
-samples: 150
-height: 315
-width: 569
+samples: 100
+height: 255
+width: 400
 maxBounce: 50
 camera:
-  position: [0, 0, -2]
-  lookingAt: [0, 0.8, 0]
+  position: [0, 1.6, -2]
+  lookingAt: [0, 1, 0]
   focalLength: 1
   fov: 1.57
   upVector: [0, 1, 0]
@@ -13,9 +13,21 @@ world:
   - tag: Sphere
     center: [0, -100.5, 0]
     radius: 100
+    mat:
+      red: 0.66
+      green: 0.74
+      blue: 0.024
   - tag: Sphere
     center: [0, 0.8, 0]
     radius: 1
+    mat:
+      red: 0.92
+      green: 0.73
+      blue: 0.85
   - tag: Sphere
     center: [3, 0.5, 3]
     radius: 1
+    mat:
+      red: 0.64
+      green: 0.94
+      blue: 0.93
