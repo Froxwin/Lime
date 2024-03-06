@@ -36,7 +36,7 @@ rayColor r ls sampleRay depth
  where
   v = if sampleRay `dot` n > 0 then sampleRay else vneg sampleRay
   hitting ray tMin tMax f = f ray tMin tMax
-  (q, w) = m v n p
+  (q, w)    = m v n p
   (n, p, m) = head hs
   hs =
     sortBy
@@ -70,14 +70,14 @@ render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da) wr
         , sy <- sampleSquare
         , let pixelSample =
                 bottomLeft
-                  `vadd` ((ui + (sx / imgWidth)) `vmul` horizontal)
-                  `vadd` ((vi + (sy / imgHeight)) `vmul` vertical)
+                  `vadd` ((ui + (sx / fromIntegral imgWidth)) `vmul` horizontal)
+                  `vadd` ((vi + (sy / fromIntegral imgHeight)) `vmul` vertical)
         , let diskSample =
                 origin `vadd` (sx `vmul` diskU) `vadd` (sy `vmul` diskV)
         , sz <- sampleSquare
         ]
-    | vi <- reverse $ scanline imgHeight
-    , ui <- scanline imgWidth
+    | vi <- reverse $ scanline $ fromIntegral imgHeight
+    , ui <- scanline $ fromIntegral imgWidth
     ]
  where
   scanline q = map (/ q) [0 .. q - 1]
@@ -91,9 +91,10 @@ render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da) wr
 
   -- viewport
   viewportHeight = 2 * tan (f / 2) * fl
-  viewportWidth  = viewportHeight * (imgWidth / imgHeight)
-  horizontal     = viewportWidth `vmul` u
-  vertical       = viewportHeight `vmul` v
+  viewportWidth =
+    viewportHeight * (fromIntegral imgWidth / fromIntegral imgHeight)
+  horizontal = viewportWidth `vmul` u
+  vertical   = viewportHeight `vmul` v
   bottomLeft =
     origin
       `vsub` (2 `vdiv` horizontal)
@@ -120,8 +121,8 @@ instance FromJSON Camera
 
 -- | Represents a world scene
 data Scene = Scene
-  { width     :: Double -- ^ The width of rendered image
-  , height    :: Double -- ^ The height of rendered image
+  { width     :: Int -- ^ The width of rendered image
+  , height    :: Int -- ^ The height of rendered image
   , samples   :: Double -- ^ Number of samples per pixel
   , maxBounce :: Int
   , camera    :: Camera -- ^ Configuration of camera

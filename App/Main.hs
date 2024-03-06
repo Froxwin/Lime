@@ -2,6 +2,7 @@
 
 module Main where
 
+
 import           Engine                         ( ignite )
 import           System.Console.CmdArgs         ( (&=)
                                                 , Data
