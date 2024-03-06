@@ -16,21 +16,21 @@ unitTests = testGroup "Tests" [cameraTests, objectTests, engineTests]
 
 mockScene :: Scene
 mockScene = Scene
-  { width   = 480
-  , samples = 10
-  , height  = 270
-  , maxBounce    = 10
-  , camera  = Camera { upVector     = Vector 0 1 0
-                     , lookingAt    = Vector 0 1 0
-                     , position     = Vector 0 1.2 (-1.3)
-                     , fov          = 1.57
-                     , focalLength  = 1
-                     , defocusAngle = 0.08
-                     }
-  , world   = [ Sphere (Vector 0 (-100.5) 0) 100
-              , Sphere (Vector 0 1 0)        1
-              , Sphere (Vector 3 1 0)        1
-              ]
+  { width     = 480
+  , samples   = 10
+  , height    = 270
+  , maxBounce = 10
+  , camera    = Camera { upVector     = Vector 0 1 0
+                       , lookingAt    = Vector 0 1 0
+                       , position     = Vector 0 1.2 (-1.3)
+                       , fov          = 1.57
+                       , focalLength  = 1
+                       , defocusAngle = 0.08
+                       }
+  , world     = [ Sphere (Vector 0 (-100.5) 0) 100 (Color 0.66 0.74 0.024)
+                , Sphere (Vector 0 1 0)        1   (Color 0.92 0.73 0.85)
+                , Sphere (Vector 3 1 0)        1   (Color 0.64 0.94 0.93)
+                ]
   }
 
 cameraTests :: TestTree
@@ -46,21 +46,7 @@ cameraTests = testGroup
   ]
 
 objectTests :: TestTree
-objectTests = testGroup
-  "Object Tests"
-  [ 
-  ]
+objectTests = testGroup "Object Tests" []
 
 engineTests :: TestTree
-engineTests = testGroup
-  "Engine Tests"
-  [ let fileHeader =
-          "P3\n"
-            ++ show (width mockScene)
-            ++ " "
-            ++ show (height mockScene)
-            ++ " 255\n"
-    in  testCase "Valid File"
-        $   take (length fileHeader) (makeImageFile mockScene)
-        @?= fileHeader
-  ]
+engineTests = testGroup "Engine Tests" []

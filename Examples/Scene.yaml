@@ -22,7 +22,7 @@ world:
     radius: 1
     mat:
       red: 0.92
-      green: 0.73
+        green: 0.73
       blue: 0.85
   - tag: Sphere
     center: [3, 0.5, 3]
