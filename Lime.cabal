@@ -50,6 +50,8 @@ library
         Things.Thing
         Things.Types
         Vector
+        Materials
+        Color
 
 executable Lime
     import:         depends, flags

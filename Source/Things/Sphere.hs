@@ -1,11 +1,10 @@
 module Things.Sphere where
 
+import           Materials                      ( Material )
 import           Ray                            ( Ray(Ray)
                                                 , rayAt
                                                 )
-import           Things.Types                   ( Material
-                                                , Thing
-                                                )
+import           Things.Types                   ( Thing )
 import           Vector                         ( Vector
                                                 , dot
                                                 , magnitude

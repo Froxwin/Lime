@@ -39,6 +39,9 @@ magnitude v = sqrt (v `dot` v)
 normalize :: Vector -> Vector
 normalize v = magnitude v `vdiv` v
 
+reflect :: Vector -> Vector -> Vector
+reflect v n = v `vsub` ((2 * (v `dot` n)) `vmul` n)
+
 instance Ord Vector where
   (<=) :: Vector -> Vector -> Bool
   a <= b = magnitude a <= magnitude b

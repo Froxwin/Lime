@@ -2,14 +2,14 @@
 
 module Camera where
 
+import           Color                          ( Color(Color) )
 import           Data.List                      ( sortBy )
 import           Data.Maybe                     ( mapMaybe )
 import           Data.Yaml                      ( FromJSON )
 import           GHC.Generics                   ( Generic )
 import           Ray                            ( Ray(..) )
 import           Things.Thing                   ( parseWorldObject )
-import           Things.Types                   ( Color(Color)
-                                                , Thing
+import           Things.Types                   ( Thing
                                                 , WorldObject
                                                 )
 import           Vector                         ( Vector(Vector, vy)
@@ -36,7 +36,7 @@ rayColor r ls sampleRay depth
  where
   v = if sampleRay `dot` n > 0 then sampleRay else vneg sampleRay
   hitting ray tMin tMax f = f ray tMin tMax
-  (q, w)    = m v n p
+  (q, w)    = m r n p v
   (n, p, m) = head hs
   hs =
     sortBy
