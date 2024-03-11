@@ -10,7 +10,7 @@
 </div>
 
 Lime is a render engine written in haskell that employes recursive ray tracing.
-The recursive nature of the algorithim makes it ideal to be implemented in a purely functional language like haskell.
+The recursive nature of the algorithim makes it ideal to implement in a purely functional language like haskell.
 
 ## Usage
 

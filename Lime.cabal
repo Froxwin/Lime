@@ -1,4 +1,4 @@
-cabal-version:   3.0
+cabal-version:   3.10
 name:            Lime
 version:         0.1.0.0
 synopsis:        Ray Tracer
@@ -22,12 +22,12 @@ source-repository head
 
 common depends
   build-depends:
-    , base
-    , directory
-    , JuicyPixels
-    , parallel
-    , process
-    , yaml
+    , base         >=4.17.2  && <4.18
+    , directory    >=1.3.7   && <1.4
+    , JuicyPixels  >=3.3.8   && <3.4
+    , parallel     >=3.2.2   && <3.3
+    , process      >=1.6.18  && <1.7
+    , yaml         >=0.11.11 && <0.12
 
   default-language: Haskell2010
 
@@ -58,7 +58,7 @@ executable Lime
   hs-source-dirs: App
   main-is:        Main.hs
   build-depends:
-    , cmdargs
+    , cmdargs  >=0.10.22 && <0.11
     , Lime
 
   ghc-options:    -rtsopts -with-rtsopts=-N
