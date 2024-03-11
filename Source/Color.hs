@@ -20,3 +20,17 @@ instance Show Color where
     [r, g, b]
 
 instance FromJSON Color
+
+correctGamma :: Color -> Color
+correctGamma (Color r g b) = Color (sqrt r) (sqrt g) (sqrt b)
+
+-- | Adds two colors by adding their respective rgb components
+addColor :: Color -> Color -> Color
+addColor (Color r g b) (Color r' g' b') = Color (r + r') (g + g') (b + b')
+
+-- | Scales a color by scaling all its color channels
+scaleColor :: Double -> Color -> Color
+scaleColor t (Color r g b) = Color (t * r) (t * g) (t * b)
+
+scaleColor' :: Color -> Color -> Color
+scaleColor' (Color r g b) (Color r' g' b') = Color (r * r') (g * g') (b * b')

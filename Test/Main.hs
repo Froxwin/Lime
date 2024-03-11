@@ -2,6 +2,7 @@ import           Test.Tasty
 import           Test.Tasty.HUnit
 
 import           Camera
+import           Color
 import           Engine
 import           Ray
 import           Things.Sphere
@@ -27,9 +28,18 @@ mockScene = Scene
                        , focalLength  = 1
                        , defocusAngle = 0.08
                        }
-  , world     = [ Sphere (Vector 0 (-100.5) 0) 100 (Color 0.66 0.74 0.024)
-                , Sphere (Vector 0 1 0)        1   (Color 0.92 0.73 0.85)
-                , Sphere (Vector 3 1 0)        1   (Color 0.64 0.94 0.93)
+  , world     = [ Sphere { center   = Vector 0 (-100.5) 0
+                         , radius   = 100
+                         , material = Lambertian (Color 0.66 0.74 0.024)
+                         }
+                , Sphere { center   = Vector 0 1 0
+                         , radius   = 1
+                         , material = Metal (Color 0.92 0.73 0.85) 0.3
+                         }
+                , Sphere { center   = Vector 3 1 0
+                         , radius   = 1
+                         , material = Dielectric 1.5
+                         }
                 ]
   }
 

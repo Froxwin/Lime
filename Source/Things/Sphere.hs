@@ -12,7 +12,6 @@ import           Vector                         ( Vector
                                                 , vsub
                                                 )
 
--- sphere :: Vector -> Double -> Thing
 sphere :: Vector -> Double -> Material -> Thing
 sphere c r m ray@(Ray a d) tMin tMax
   | delta < 0 = Nothing

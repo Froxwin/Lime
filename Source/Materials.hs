@@ -7,7 +7,16 @@ import           Vector
 type Material = Ray -> Vector -> Vector -> Vector -> (Color, Ray)
 
 lambertian :: Color -> Material
-lambertian c r n p v = (c, Ray p (v `vadd` n))
+lambertian c _ n p v = (c, Ray p (v `vadd` n))
 
-metal :: Color -> Material
-metal c r n p v = (c, Ray p (reflect (normalize (rayDirection r)) n))
+metal :: Color -> Double -> Material
+metal c f r n p v =
+  (c, Ray p (reflect (normalize (rayDirection r)) n `vadd` (f `vmul` v)))
+
+dielectric :: Double -> Material
+dielectric ior r n p _ = (Color 1 1 1, Ray p direction)
+ where
+  ratio     = if rayDirection r `dot` n < 0 then 1 / ior else ior
+  direction = if rayDirection r `dot` n > 0
+    then refract (normalize (rayDirection r)) (vneg n) ratio
+    else refract (normalize (rayDirection r)) n ratio

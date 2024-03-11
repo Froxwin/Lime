@@ -42,6 +42,13 @@ normalize v = magnitude v `vdiv` v
 reflect :: Vector -> Vector -> Vector
 reflect v n = v `vsub` ((2 * (v `dot` n)) `vmul` n)
 
+refract :: Vector -> Vector -> Double -> Vector
+refract v n mu = rperp `vadd` rpara
+ where
+  co    = vneg v `dot` n
+  rperp = mu `vmul` (v `vadd` (co `vmul` n))
+  rpara = (-sqrt (abs (1 - magnitude rperp ^ 2))) `vmul` n
+
 instance Ord Vector where
   (<=) :: Vector -> Vector -> Bool
   a <= b = magnitude a <= magnitude b

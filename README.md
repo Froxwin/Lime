@@ -9,21 +9,18 @@
 
 </div>
 
-Silly Raytracer
+Lime is a render engine written in haskell that employes recursive ray tracing.
+The recursive nature of the algorithim makes it ideal to be implemented in a purely functional language like haskell.
 
 ## Usage
 
-> [!IMPORTANT]
-> Requires ffmpeg in the system path
-
-Use `cabal` to build the project.
-After building run it with
+Use `cabal` to build and run the project by running the following command
 
 ```ps1
-cabal run Lime -- [-i|--input=PATH] [-o|--output=PATH] [-f|--force=BOOL]
+$ cabal run Lime -- [-i|--input=PATH] [-o|--output=PATH] [-f|--force=BOOL]
 ```
 
-This will also build if not already built. Run `cabal run Lime -- --help` for more help
+Run `cabal run Lime -- --help` for more help
 
 For reference scenes see [examples](Examples)
 
@@ -42,14 +39,14 @@ Running ffmpeg with the following arguments generates the video.
 ffmpeg -framerate some_fps -i "some_dir\%d.png" some_video.mp4
 ```
 
-See [example](#example-render)
+See [example](#example-renders)
 
 ## Documentation
 
 Run `cabal haddock` in the project directory to build the documentation
 
-## Example Render
+## Example Renders
 
-| Example Scene                        | Example Animation                        |
-| ------------------------------------ | ---------------------------------------- |
-| ![Example Scene](Examples/Scene.png) | ![Example Animation](Examples/Scene.gif) |
+![Scene](Examples/Scene.png)
+
+![Glass](Examples/Glass.png)

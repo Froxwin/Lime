@@ -1,9 +1,11 @@
 packages: Lime.cabal
+
 jobs: $ncpus
 
-package Lime
-  haddock-html: True
-  haddock-hoogle: True
-  haddock-quickjump: True
-  haddock-hyperlink-source: True
-  test-show-details: streaming
+haddock-html: True
+haddock-hoogle: True
+haddock-quickjump: True
+haddock-hyperlink-source: True
+
+tests: True
+test-show-details: direct

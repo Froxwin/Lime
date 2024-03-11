@@ -3,7 +3,7 @@ name:            Lime
 version:         0.1.0.0
 synopsis:        Ray Tracer
 description:
-    A simple raytracer written in haskell. See the README on GitHub at <https://github.com/Froxwin/Lime#readme>
+  A simple raytracer written in haskell. See the README on GitHub at <https://github.com/Froxwin/Lime#readme>
 
 homepage:        https://github.com/Froxwin/Lime#readme
 bug-reports:     https://github.com/Froxwin/Lime/issues
@@ -11,64 +11,64 @@ license:         BSD-3-Clause
 license-file:    LICENSE.md
 copyright:       2024 Froxwin
 author:          Froxwin
+maintainer:      56168224+Froxwin@users.noreply.github.com
 category:        Graphics
 build-type:      Simple
 extra-doc-files: README.md
 
 source-repository head
-    type:     git
-    location: https://github.com/Froxwin/Lime
+  type:     git
+  location: https://github.com/Froxwin/Lime
 
 common depends
-    build-depends:
-        , base
-        , directory
-        , parallel
-        , process
-        , yaml
-        , JuicyPixels
+  build-depends:
+    , base
+    , directory
+    , JuicyPixels
+    , parallel
+    , process
+    , yaml
 
-    default-language: Haskell2010
+  default-language: Haskell2010
 
 common flags
-    ghc-options:
-        -Wall -Wno-type-defaults -threaded -Wcompat -Widentities
-        -Wincomplete-record-updates -Wincomplete-uni-patterns
-        -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  ghc-options:
+    -Wall -Wno-type-defaults -threaded -Wcompat -Widentities
+    -Wincomplete-record-updates -Wincomplete-uni-patterns
+    -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
 
-    default-extensions: InstanceSigs
+  default-extensions: InstanceSigs
 
 library
-    import:          depends, flags
-    hs-source-dirs:  Source Source/Things
-    exposed-modules:
-        Camera
-        Engine
-        Ray
-        Things.Cube
-        Things.Sphere
-        Things.Thing
-        Things.Types
-        Vector
-        Materials
-        Color
+  import:          depends, flags
+  hs-source-dirs:  Source Source/Things
+  exposed-modules:
+    Camera
+    Color
+    Engine
+    Materials
+    Ray
+    Things.Sphere
+    Things.Thing
+    Things.Types
+    Vector
 
 executable Lime
-    import:         depends, flags
-    hs-source-dirs: App
-    main-is:        Main.hs
-    build-depends:
-        , cmdargs
-        , Lime
+  import:         depends, flags
+  hs-source-dirs: App
+  main-is:        Main.hs
+  build-depends:
+    , cmdargs
+    , Lime
 
-    ghc-options:    -rtsopts -with-rtsopts=-N
+  ghc-options:    -rtsopts -with-rtsopts=-N
 
 test-suite Alkali
-    import:         depends
-    type:           exitcode-stdio-1.0
-    main-is:        Main.hs
-    hs-source-dirs: Test
-    build-depends:
-        , Lime
-        , tasty
-        , tasty-hunit
+  import:         depends
+  type:           exitcode-stdio-1.0
+  main-is:        Main.hs
+  hs-source-dirs: Test
+  build-depends:
+    , Lime
+    , tasty
+    , tasty-hunit
