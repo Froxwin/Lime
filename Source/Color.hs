@@ -2,8 +2,8 @@
 
 module Color where
 
-import           Data.Yaml                      ( FromJSON )
-import           GHC.Generics                   ( Generic )
+import           Data.Yaml    (FromJSON (parseJSON), Parser, Value)
+import           GHC.Generics (Generic)
 
 -- | Represents a rgb color type
 data Color = Color
@@ -19,7 +19,11 @@ instance Show Color where
     (show . round . (* 255))
     [r, g, b]
 
-instance FromJSON Color
+instance FromJSON Color where
+  parseJSON :: Value -> Parser Color
+  parseJSON v = do
+    [x, y, z] <- parseJSON v
+    return $ Color (x / 255) (y / 255) (z / 255)
 
 correctGamma :: Color -> Color
 correctGamma (Color r g b) = Color (sqrt r) (sqrt g) (sqrt b)

@@ -4,9 +4,10 @@ import           Test.Tasty.HUnit
 import           Camera
 import           Color
 import           Engine
+import           Materials
+import           Parser
 import           Ray
-import           Things.Sphere
-import           Things.Types
+import           Things
 import           Vector
 
 main :: IO ()

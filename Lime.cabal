@@ -41,16 +41,15 @@ common flags
 
 library
   import:          depends, flags
-  hs-source-dirs:  Source Source/Things
+  hs-source-dirs:  Source
   exposed-modules:
     Camera
     Color
     Engine
     Materials
     Ray
-    Things.Sphere
-    Things.Thing
-    Things.Types
+    Parser
+    Things
     Vector
 
 executable Lime

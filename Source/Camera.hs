@@ -1,32 +1,20 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Camera where
 
-import           Color                          ( Color(Color)
-                                                , addColor
-                                                , correctGamma
-                                                , scaleColor
-                                                , scaleColor'
-                                                )
-import           Data.List                      ( sortBy )
-import           Data.Maybe                     ( mapMaybe )
-import           Data.Yaml                      ( FromJSON )
-import           GHC.Generics                   ( Generic )
-import           Ray                            ( Ray(..) )
-import           Things.Thing                   ( parseWorldObject )
-import           Things.Types                   ( Thing
-                                                , WorldObject
-                                                )
-import           Vector                         ( Vector(Vector, vy)
-                                                , cross
-                                                , dot
-                                                , normalize
-                                                , vadd
-                                                , vdiv
-                                                , vmul
-                                                , vneg
-                                                , vsub
-                                                )
+import           Color        (Color (Color), addColor, correctGamma,
+                               scaleColor, scaleColor')
+import           Data.List    (sortBy)
+import           Data.Maybe   (mapMaybe)
+import           Data.Yaml    (FromJSON (parseJSON), Parser, Value (Object),
+                               (.:))
+import           GHC.Generics (Generic)
+import           Parser       (WorldObject, parseWorldObject)
+import           Ray          (Ray (..))
+import           Things       (Thing)
+import           Vector       (Vector (Vector, vy), cross, dot, normalize, vadd,
+                               vdiv, vmul, vneg, vsub)
 
 -- | The 'rayColor' function computes the color of a ray.
 rayColor :: Ray -> [Thing] -> Vector -> Int -> Color
@@ -122,7 +110,16 @@ data Camera = Camera
   }
   deriving (Show, Generic)
 
-instance FromJSON Camera
+instance FromJSON Camera where
+  parseJSON :: Value -> Parser Camera
+  parseJSON (Object v) = Camera <$>
+                          v .: "position" <*>
+                          v .: "looking-at" <*>
+                          v .: "focal-length" <*>
+                          v .: "field-of-view" <*>
+                          v .: "upward-vector" <*>
+                          v .: "defocus-angle"
+  parseJSON _ = error "Can't parse Camera from YAML"
 
 -- | Represents a world scene
 data Scene = Scene
@@ -135,4 +132,13 @@ data Scene = Scene
   }
   deriving (Show, Generic)
 
-instance FromJSON Scene
+instance FromJSON Scene where
+  parseJSON :: Value -> Parser Scene
+  parseJSON (Object v) = Scene <$>
+                          v .: "width" <*>
+                          v .: "height" <*>
+                          v .: "samples-per-pixel" <*>
+                          v .: "maximum-bounces" <*>
+                          v .: "camera" <*>
+                          v .: "world"
+  parseJSON _ = error "Can not parse Scene from YAML"

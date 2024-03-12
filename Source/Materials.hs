@@ -1,8 +1,9 @@
 module Materials where
 
-import           Color
-import           Ray
-import           Vector
+import           Color  (Color (Color))
+import           Ray    (Ray (Ray, rayDirection))
+import           Vector (Vector, dot, normalize, reflect, refract, vadd, vmul,
+                         vneg)
 
 type Material = Ray -> Vector -> Vector -> Vector -> (Color, Ray)
 

@@ -1,24 +1,21 @@
-samples: 100
 height: 255
 width: 400
-maxBounce: 50
+samples-per-pixel: 100
+maximum-bounces: 50
 camera:
   position: [0.5, 0.8, -2.5]
-  lookingAt: [0, 1, 0]
-  focalLength: 1
-  fov: 1.57
-  upVector: [0, 1, 0]
-  defocusAngle: 0.05
+  looking-at: [0, 1, 0]
+  focal-length: 1
+  field-of-view: 1.57
+  upward-vector: [0, 1, 0]
+  defocus-angle: 0.05
 world:
   - tag: Sphere
     center: [0, -100.5, 0]
     radius: 100
     material:
       tag: Lambertian
-      color:
-        red: 0.66
-        green: 0.74
-        blue: 0.024
+      color: [168, 189, 6]
   - tag: Sphere
     center: [0, 0.8, 0]
     radius: 1
@@ -36,17 +33,11 @@ world:
     radius: 1
     material:
       tag: Lambertian
-      color:
-        red: 0.09
-        green: 0.57
-        blue: 0.8
+      color: [23, 145, 204]
   - tag: Sphere
     center: [1, 0.5, 2]
     radius: 1
     material:
       tag: Metal
       fuzz: 0.3
-      color:
-        red: 0.68
-        green: 0.22
-        blue: 0.24
+      color: [173, 56, 61]
