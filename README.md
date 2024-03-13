@@ -14,6 +14,16 @@ The recursive nature of the algorithim makes it ideal to implement in a purely f
 
 ## Usage
 
+### With nix
+
+The [nix expression](shell.nix) provides support for nix. Just run the following command to build
+
+```sh
+$ nix-shell --command build
+```
+
+### Without nix
+
 Use `cabal` to build and run the project by running the following command
 
 ```ps1
@@ -36,7 +46,7 @@ You can vary any parameter in the same way.
 Running ffmpeg with the following arguments generates the video.
 
 ```ps1
-ffmpeg -framerate some_fps -i "some_dir\%d.png" some_video.mp4
+$ ffmpeg -framerate some_fps -i "some_dir\%d.png" some_video.mp4
 ```
 
 See [example](#example-renders)
@@ -47,6 +57,10 @@ Run `cabal haddock` in the project directory to build the documentation
 
 ## Example Renders
 
-![Scene](Examples/Scene.png)
+<div align="center">
 
-![Glass](Examples/Glass.png)
+![Scene](Examples/Scene.png) ![Glass](Examples/Glass.png)
+
+![Moon](Examples/Moon.png) ![Balls](Examples/Balls.png)
+
+</div>

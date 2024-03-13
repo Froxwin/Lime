@@ -51,6 +51,7 @@ library
     Parser
     Things
     Vector
+    Textures
 
 executable Lime
   import:         depends, flags

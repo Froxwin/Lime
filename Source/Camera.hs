@@ -6,7 +6,7 @@ module Camera where
 import           Color        (Color (Color), addColor, correctGamma,
                                scaleColor, scaleColor')
 import           Data.List    (sortBy)
-import           Data.Maybe   (mapMaybe)
+import           Data.Maybe
 import           Data.Yaml    (FromJSON (parseJSON), Parser, Value (Object),
                                (.:))
 import           GHC.Generics (Generic)
@@ -15,25 +15,26 @@ import           Ray          (Ray (..))
 import           Things       (Thing)
 import           Vector       (Vector (Vector, vy), cross, dot, normalize, vadd,
                                vdiv, vmul, vneg, vsub)
+import Codec.Picture (DynamicImage)
 
 -- | The 'rayColor' function computes the color of a ray.
 rayColor :: Ray -> [Thing] -> Vector -> Int -> Color
 rayColor r ls sampleRay depth
   | depth == 0
   = Color 0 0 0
-  | not (null hs)
-  = q `scaleColor'` rayColor w ls sampleRay (depth - 1)
+  | null hs = Color 0 0 0
+  | not (null hs) = if isJust w then q `scaleColor'` rayColor (fromJust w) ls sampleRay (depth - 1) else q
   | otherwise
   = ((1 - d) `scaleColor` Color 1.0 1.0 1.0)
     `addColor` (d `scaleColor` Color 0.5 0.7 1.0)
  where
   v = if sampleRay `dot` n > 0 then sampleRay else vneg sampleRay
   hitting ray tMin tMax f = f ray tMin tMax
-  (q, w)    = m r n p v
-  (n, p, m) = head hs
+  (q, w)    = m tc r n p v
+  (n, p, m, tc) = head hs
   hs =
     sortBy
-        (\(_, p1, _) (_, p2, _) ->
+        (\(_, p1, _, _) (_, p2, _, _) ->
           compare (p1 `vsub` rayOrigin r) (p2 `vsub` rayOrigin r)
         )
       $ mapMaybe (hitting r 0.001 (1 / 0)) ls
@@ -48,15 +49,15 @@ rayColor r ls sampleRay depth
   The function implements anti-aliasing via grid supersampling with sample size
   'samplesPerPixel'.
 -}
-render :: Scene -> [Color]
-render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da) wrld)
+render :: Scene -> [(DynamicImage, FilePath)] -> [Color]
+render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da) _ wrld) wq
   = [ correctGamma $ foldl
         addColor
         (Color 0 0 0)
         [ (1 / (fromIntegral (length sampleSquare) ^ 3))
             `scaleColor` rayColor
                            (Ray diskSample (pixelSample `vsub` diskSample))
-                           (map parseWorldObject wrld)
+                           (map (parseWorldObject wq) wrld)
                            (Vector sx sy sz)
                            m
         | sx <- sampleSquare
@@ -128,6 +129,7 @@ data Scene = Scene
   , samples   :: Double -- ^ Number of samples per pixel
   , maxBounce :: Int
   , camera    :: Camera -- ^ Configuration of camera
+  , textures  :: [FilePath]
   , world     :: [WorldObject]
   }
   deriving (Show, Generic)
@@ -140,5 +142,6 @@ instance FromJSON Scene where
                           v .: "samples-per-pixel" <*>
                           v .: "maximum-bounces" <*>
                           v .: "camera" <*>
+                          v .: "texture-files" <*>
                           v .: "world"
   parseJSON _ = error "Can not parse Scene from YAML"

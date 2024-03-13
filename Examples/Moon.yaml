@@ -1,0 +1,28 @@
+height: 255
+width: 400
+samples-per-pixel: 1500
+maximum-bounces: 50
+camera:
+  position: [0, 0, -2.5]
+  looking-at: [0, 0, 0]
+  focal-length: 1
+  field-of-view: 1.57
+  upward-vector: [0, 1, 0]
+  defocus-angle: 0.05
+texture-files:
+  - /a.jpg
+world:
+  - tag: Sphere
+    center: [180, 0, -80]
+    radius: 100
+    material:
+      tag: Emissive
+      lightColor: [255, 255, 255]
+  - tag: Sphere
+    center: [0, 0, 0]
+    radius: 1
+    material:
+      tag: Lambertian
+      texture:
+        tag: SolidColor
+        color: [153, 153, 153]

@@ -5,10 +5,10 @@
 - [x] Sphere rendering
 - [x] Multiple Objects
 - [x] Diffuse Materials
-- [ ] Other Materials
-- [ ] Textures
-- [ ] Polygons
-- [ ] Lights
+- [x] Other Materials
+- [x] Textures
+- [x] Quadrilaterals
+- [x] Lights
 - [ ] Object file parsing
 
 ## Camera
