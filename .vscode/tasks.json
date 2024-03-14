@@ -4,7 +4,7 @@
     {
       "label": "Test",
       "type": "shell",
-      "command": "cabal test --test-option=--color=always",
+      "command": "cabal test",
       "group": {
         "kind": "test",
         "isDefault": true
@@ -28,7 +28,7 @@
     {
       "label": "Clean",
       "type": "shell",
-      "command": "cabal clean && .\\Scripts\\Clean.ps1",
+      "command": "cabal clean",
       "presentation": {
         "reveal": "silent",
         "close": true

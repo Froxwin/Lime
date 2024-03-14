@@ -2,8 +2,11 @@
 
 module Color where
 
-import           Data.Yaml    (FromJSON (parseJSON), Parser, Value)
-import           GHC.Generics (Generic)
+import           Data.Yaml                      ( FromJSON(parseJSON)
+                                                , Parser
+                                                , Value
+                                                )
+import           GHC.Generics                   ( Generic )
 
 -- | Represents a rgb color type
 data Color = Color

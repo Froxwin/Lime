@@ -2,30 +2,37 @@
 
 module Engine where
 
-import           Camera                         ( Scene(height, width, textures)
+import           Camera                         ( Scene(height, textures, width)
                                                 , render
                                                 )
-import           Codec.Picture
+import           Codec.Picture                  ( DynamicImage
+                                                , PixelRGB8(PixelRGB8)
+                                                , generateImage
+                                                , readImage
+                                                , writePng
+                                                )
 import           Color                          ( Color(Color) )
 import           Data.Yaml                      ( decodeFileEither
                                                 , prettyPrintParseException
                                                 )
-import Codec.Picture.Metadata (Value(Double))
 
 group :: Int -> [a] -> [[a]]
 group _ [] = []
 group n xs = take n xs : group n (drop n xs)
 
-loadTextures :: Scene -> IO [DynamicImage]
-loadTextures scene = mapM (fmap (either error id) . readImage) $ textures scene
+loadTextures :: Scene -> IO [(String, DynamicImage)]
+loadTextures scene = mapM loadTexture $ textures scene
+ where
+  loadTexture (k, v) = do
+    a <- either error id <$> readImage v
+    return (k, a)
 
--- | Ignites the engine
 ignite :: String -> String -> Bool -> IO ()
-ignite input output _force = do
+ignite input output _preview = do
   !scene <- either (error . prettyPrintParseException) id
     <$> decodeFileEither input
   !texs <- loadTextures scene
-  let !pixelData = group (width scene) $ render scene $ zip texs $ textures scene
+  let !pixelData = group (width scene) $ render scene texs
   writePng output $ generateImage
     (\x y ->
       let (Color r g b) = ((pixelData !! y) !! x)

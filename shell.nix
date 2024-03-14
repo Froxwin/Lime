@@ -9,7 +9,7 @@
   ];
 } }:
 let
-  tools = with pkgs; [ cabal-install ghc ffmpeg ];
+  tools = with pkgs; [ cabal-install ghc ];
 
   limeShellHook = ''
     alias repl="cabal repl"

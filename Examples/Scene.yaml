@@ -1,7 +1,7 @@
 height: 255
 width: 400
-samples-per-pixel: 1000
-maximum-bounces: 100
+samples-per-pixel: 100
+maximum-bounces: 50
 camera:
   position: [0.5, 0.8, -2.5]
   looking-at: [0, 1, 0]
@@ -9,8 +9,7 @@ camera:
   field-of-view: 1.57
   upward-vector: [0, 1, 0]
   defocus-angle: 0.05
-texture-files:
-  - /a.jpg
+texture-files: []
 world:
   - tag: Sphere
     center: [0, -100.5, 0]

@@ -1,36 +1,51 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# OPTIONS_GHC -Wno-partial-fields #-}
+
 module Textures where
 
-import           Codec.Picture
-import           Color
-import           Vector
+import           Color                          ( Color )
+import           Data.Yaml                      ( FromJSON )
+import           GHC.Generics                   ( Generic )
+import           Vector                         ( Vector(Vector) )
 
 type TextureCoords = (Double, Double)
 
 type Texture = TextureCoords -> Vector -> Color
 
-solidColor :: Color -> Texture
-solidColor color (u, v) p = color
+class TTexture a where
+  ttexture :: a -> Texture
 
-checkerTexture :: Double -> Color -> Color -> Texture
-checkerTexture scale color1 color2 (u, v) p@(Vector px py pz) = if isEven
-  then solidColor color1 (u, v) p
-  else solidColor color2 (u, v) p
- where
-  xInt   = floor (1 / scale * px)
-  yInt   = floor (1 / scale * py)
-  zInt   = floor (1 / scale * pz)
-  isEven = even (xInt + yInt + zInt)
+data WorldTexture =
+    SolidColor { color :: Color }
+  | Checkered  { scale :: Double, color1 :: Color, color2 :: Color }
+  deriving (Show, Generic, Eq)
 
-imageTexture :: DynamicImage -> Texture
-imageTexture img (u, v) p = if imageHeight img8 <= 0 then Color 255 0 255 else pixel
- where
-  img8 = convertRGB8 img
-  i = u * fromIntegral (imageWidth img8)
-  j = v * fromIntegral (imageHeight img8)
-  pixel =
-    (\(PixelRGB8 r g b) -> Color
-        ((fromIntegral (toInteger r) :: Double) / 255)
-        ((fromIntegral (toInteger g) :: Double) / 255)
-        ((fromIntegral (toInteger b) :: Double) / 255)
-      )
-      (pixelAt img8 (round i) (round j))
+instance FromJSON WorldTexture
+
+instance TTexture WorldTexture where
+  ttexture :: WorldTexture -> Texture
+  ttexture (SolidColor c     ) _      _                   = c
+
+  ttexture (Checkered k c1 c2) (u, v) p@(Vector px py pz) = if isEven
+    then ttexture (SolidColor c1) (u, v) p
+    else ttexture (SolidColor c2) (u, v) p
+   where
+    xInt   = floor (1 / k * px)
+    yInt   = floor (1 / k * py)
+    zInt   = floor (1 / k * pz)
+    isEven = even (xInt + yInt + zInt)
+
+-- FIXME image textures are too slow to be usable
+-- imageTexture :: DynamicImage -> Texture
+-- imageTexture img (u, v) p = pixel
+--  where
+--   img8 = convertRGB8 img
+--   i    = u * fromIntegral (imageWidth img8)
+--   j    = v * fromIntegral (imageHeight img8)
+--   pixel =
+--     (\(PixelRGB8 r g b) -> Color
+--         ((fromIntegral (toInteger r) :: Double) / 255)
+--         ((fromIntegral (toInteger g) :: Double) / 255)
+--         ((fromIntegral (toInteger b) :: Double) / 255)
+--       )
+--       (pixelAt img8 (round i) (round j))

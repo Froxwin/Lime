@@ -47,11 +47,10 @@ library
     Color
     Engine
     Materials
+    Primitives
     Ray
-    Parser
-    Things
-    Vector
     Textures
+    Vector
 
 executable Lime
   import:         depends, flags

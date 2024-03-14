@@ -1,6 +1,9 @@
 module Ray where
 
-import           Vector (Vector, vadd, vmul)
+import           Vector                         ( Vector
+                                                , vadd
+                                                , vmul
+                                                )
 
 -- | Represents a light ray
 data Ray = Ray

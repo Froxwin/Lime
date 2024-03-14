@@ -3,34 +3,58 @@
 
 module Camera where
 
-import           Color        (Color (Color), addColor, correctGamma,
-                               scaleColor, scaleColor')
-import           Data.List    (sortBy)
-import           Data.Maybe
-import           Data.Yaml    (FromJSON (parseJSON), Parser, Value (Object),
-                               (.:))
-import           GHC.Generics (Generic)
-import           Parser       (WorldObject, parseWorldObject)
-import           Ray          (Ray (..))
-import           Things       (Thing)
-import           Vector       (Vector (Vector, vy), cross, dot, normalize, vadd,
-                               vdiv, vmul, vneg, vsub)
-import Codec.Picture (DynamicImage)
+import           Codec.Picture                  ( DynamicImage )
+import           Color                          ( Color(Color)
+                                                , addColor
+                                                , correctGamma
+                                                , scaleColor
+                                                , scaleColor'
+                                                )
+import           Data.List                      ( sortBy )
+import           Data.Maybe                     ( fromJust
+                                                , isJust
+                                                , mapMaybe
+                                                )
+import           Data.Yaml                      ( (.:)
+                                                , FromJSON(parseJSON)
+                                                , Parser
+                                                , Value(Object)
+                                                )
+import           GHC.Generics                   ( Generic )
+import           Primitives                     ( Primitive
+                                                , TWorldObject(tprimitive)
+                                                , WorldObject
+                                                )
+import           Ray                            ( Ray(..) )
+import           Vector                         ( Vector(Vector, vy)
+                                                , cross
+                                                , dot
+                                                , normalize
+                                                , vadd
+                                                , vdiv
+                                                , vmul
+                                                , vneg
+                                                , vsub
+                                                )
 
 -- | The 'rayColor' function computes the color of a ray.
-rayColor :: Ray -> [Thing] -> Vector -> Int -> Color
+rayColor :: Ray -> [Primitive] -> Vector -> Int -> Color
 rayColor r ls sampleRay depth
   | depth == 0
   = Color 0 0 0
-  | null hs = Color 0 0 0
-  | not (null hs) = if isJust w then q `scaleColor'` rayColor (fromJust w) ls sampleRay (depth - 1) else q
+  | null hs
+  = Color 0 0 0
+  | not (null hs)
+  = if isJust w
+    then q `scaleColor'` rayColor (fromJust w) ls sampleRay (depth - 1)
+    else q
   | otherwise
   = ((1 - d) `scaleColor` Color 1.0 1.0 1.0)
     `addColor` (d `scaleColor` Color 0.5 0.7 1.0)
  where
   v = if sampleRay `dot` n > 0 then sampleRay else vneg sampleRay
   hitting ray tMin tMax f = f ray tMin tMax
-  (q, w)    = m tc r n p v
+  (q, w)        = m tc r n p v
   (n, p, m, tc) = head hs
   hs =
     sortBy
@@ -49,15 +73,15 @@ rayColor r ls sampleRay depth
   The function implements anti-aliasing via grid supersampling with sample size
   'samplesPerPixel'.
 -}
-render :: Scene -> [(DynamicImage, FilePath)] -> [Color]
-render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da) _ wrld) wq
+render :: Scene -> [(String, DynamicImage)] -> [Color]
+render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da) _ wrld) _wq
   = [ correctGamma $ foldl
         addColor
         (Color 0 0 0)
         [ (1 / (fromIntegral (length sampleSquare) ^ 3))
             `scaleColor` rayColor
                            (Ray diskSample (pixelSample `vsub` diskSample))
-                           (map (parseWorldObject wq) wrld)
+                           (map tprimitive wrld)
                            (Vector sx sy sz)
                            m
         | sx <- sampleSquare
@@ -113,13 +137,20 @@ data Camera = Camera
 
 instance FromJSON Camera where
   parseJSON :: Value -> Parser Camera
-  parseJSON (Object v) = Camera <$>
-                          v .: "position" <*>
-                          v .: "looking-at" <*>
-                          v .: "focal-length" <*>
-                          v .: "field-of-view" <*>
-                          v .: "upward-vector" <*>
-                          v .: "defocus-angle"
+  parseJSON (Object v) =
+    Camera
+      <$> v
+      .:  "position"
+      <*> v
+      .:  "looking-at"
+      <*> v
+      .:  "focal-length"
+      <*> v
+      .:  "field-of-view"
+      <*> v
+      .:  "upward-vector"
+      <*> v
+      .:  "defocus-angle"
   parseJSON _ = error "Can't parse Camera from YAML"
 
 -- | Represents a world scene
@@ -129,19 +160,27 @@ data Scene = Scene
   , samples   :: Double -- ^ Number of samples per pixel
   , maxBounce :: Int
   , camera    :: Camera -- ^ Configuration of camera
-  , textures  :: [FilePath]
+  , textures  :: [(String, FilePath)]
   , world     :: [WorldObject]
   }
   deriving (Show, Generic)
 
 instance FromJSON Scene where
   parseJSON :: Value -> Parser Scene
-  parseJSON (Object v) = Scene <$>
-                          v .: "width" <*>
-                          v .: "height" <*>
-                          v .: "samples-per-pixel" <*>
-                          v .: "maximum-bounces" <*>
-                          v .: "camera" <*>
-                          v .: "texture-files" <*>
-                          v .: "world"
+  parseJSON (Object v) =
+    Scene
+      <$> v
+      .:  "width"
+      <*> v
+      .:  "height"
+      <*> v
+      .:  "samples-per-pixel"
+      <*> v
+      .:  "maximum-bounces"
+      <*> v
+      .:  "camera"
+      <*> v
+      .:  "texture-files"
+      <*> v
+      .:  "world"
   parseJSON _ = error "Can not parse Scene from YAML"
