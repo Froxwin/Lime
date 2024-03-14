@@ -5,9 +5,9 @@ import           Camera
 import           Color
 import           Engine
 import           Materials
-import           Parser
+import           Primitives
 import           Ray
-import           Things
+import           Textures
 import           Vector
 
 main :: IO ()
@@ -58,14 +58,12 @@ cameraTests = testGroup
   [ testCase "Valid Render" $ do
     texs <- loadTextures mockScene
     assertBool
-      "hm"
-      (all (all (<= 1) . (\(Color r g b) -> [r, g, b]))
-           (render mockScene (zip texs (textures mockScene)))
-      )
+      "Checks if generated pixel values are valid"
+      (all (all (<= 1) . (\(Color r g b) -> [r, g, b])) (render mockScene []))
   , testCase "Correct Resolution" $ do
     texs <- loadTextures mockScene
     assertEqual "Checks if number of rendered pixels is correct"
-                (length (render mockScene (zip texs (textures mockScene))))
+                (length (render mockScene []))
                 (480 * 270)
   ]
 
