@@ -8,6 +8,7 @@ import           Data.Yaml                      ( FromJSON(parseJSON)
                                                 )
 import           GHC.Generics                   ( Generic )
 
+-- | Represents a 3D vector with fields corresponding to each component
 data Vector = Vector
   { vx :: Double
   , vy :: Double
@@ -33,25 +34,34 @@ cross (Vector x y z) (Vector x' y' z') =
 vneg :: Vector -> Vector
 vneg (Vector x y z) = Vector (-x) (-y) (-z)
 
-magnitude :: Vector -> Double
-magnitude v = sqrt (v `dot` v)
+magnitude, magnitudeSq :: Vector -> Double
+magnitudeSq v = v `dot` v
+magnitude = sqrt . magnitudeSq
 
 normalize :: Vector -> Vector
 normalize v = magnitude v `vdiv` v
 
+-- | Reflects a vector with respect to the given surface normal
+--
+-- @ reflect :: Incident Vector -> Surface Normal -> Reflected Vector @
 reflect :: Vector -> Vector -> Vector
 reflect v n = v `vsub` ((2 * (v `dot` n)) `vmul` n)
 
+-- | Refracts a vector with respect to the given surface normal and relative
+-- refractive index of the interface
+--
+-- @ refract :: Incident Vector -> Surface Normal -> Relative IOR -> Refracted Vector @
 refract :: Vector -> Vector -> Double -> Vector
 refract v n mu = rperp `vadd` rpara
  where
-  co    = vneg v `dot` n
-  rperp = mu `vmul` (v `vadd` (co `vmul` n))
-  rpara = (-sqrt (abs (1 - magnitude rperp ^ 2))) `vmul` n
+  cosine = vneg v `dot` n
+  rperp  = mu `vmul` (v `vadd` (cosine `vmul` n))
+  rpara  = (-sqrt (abs (1 - magnitudeSq v))) `vmul` n
 
+-- | Compare vectors with respect to their magnitudes
 instance Ord Vector where
   (<=) :: Vector -> Vector -> Bool
-  a <= b = magnitude a <= magnitude b
+  a <= b = magnitudeSq a <= magnitudeSq b
 
 instance Show Vector where
   show :: Vector -> String

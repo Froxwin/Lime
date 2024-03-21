@@ -11,6 +11,6 @@ data Ray = Ray
   , rayDirection :: Vector -- ^ direction in which ray is going
   }
 
--- | Gives the point on ray at parameter
+-- | Gives the point on ray at given parameter
 rayAt :: Ray -> Double -> Vector
 rayAt (Ray o d) t = o `vadd` (t `vmul` d)

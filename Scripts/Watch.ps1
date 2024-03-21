@@ -34,9 +34,9 @@ function Get-Table($folder, $ignore = @()) {
 
 Write-Output "[ $(Get-Date -f "hh:mm:ss") ] ( `e[36mStarted Watching`e[0m )"
 while ($true) {
-  $a = Get-Table ".\src"
+  $a = Get-Table ".\Source"
   Start-Sleep -Seconds 1
-  $b = Get-Table ".\src"
+  $b = Get-Table ".\Source"
   if ($a -ne $b) {
     Write-Output "[ $(Get-Date -f "hh:mm:ss") ] ( `e[32mBuild Triggered`e[0m )"
     cabal.exe run --verbose=0

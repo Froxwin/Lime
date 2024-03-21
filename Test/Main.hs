@@ -29,12 +29,12 @@ mockScene = Scene
                        , fov          = 1.57
                        , focalLength  = 1
                        , defocusAngle = 0.08
+                       , defaultColor = Color 0 0 0
                        }
-  , world     = [ Sphere
-                  { center = Vector 0 (-100.5) 0
-                  , radius = 100
-                  , material = Lambertian { texture = SolidColor (Color 255 0 0) }
-                  }
+  , world     = [ Sphere { center   = Vector 0 (-100.5) 0
+                         , radius   = 100
+                         , material = Lambertian $ SolidColor $ Color 255 0 0
+                         }
                 , Sphere
                   { center   = Vector 0 1 0
                   , radius   = 1

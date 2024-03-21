@@ -9,3 +9,14 @@ haddock-hyperlink-source: True
 
 tests: True
 test-show-details: direct
+
+-- package *
+--   coverage: True
+--   library-coverage: True
+--
+-- package attoparsec
+--   coverage: False
+--   library-coverage: False
+
+-- profiling: True
+-- profiling-detail: all-functions

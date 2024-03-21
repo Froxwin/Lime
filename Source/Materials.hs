@@ -4,6 +4,8 @@
 module Materials where
 
 import           Color                          ( Color(Color) )
+import           Data.Yaml                      ( FromJSON )
+import           GHC.Generics                   ( Generic )
 import           Ray                            ( Ray(Ray, rayDirection) )
 import           Textures                       ( TTexture(ttexture)
                                                 , TextureCoords
@@ -19,32 +21,30 @@ import           Vector                         ( Vector
                                                 , vneg
                                                 )
 
-import           Data.Yaml                      ( FromJSON )
-import           GHC.Generics                   ( Generic )
-
 type Material
   = TextureCoords -> Ray -> Vector -> Vector -> Vector -> (Color, Maybe Ray)
 
 class TMaterial a where
-  tmaterial :: a -> Material
+    tmaterial :: a -> Material
 
-data WorldMaterial =
-    Lambertian { texture :: WorldTexture }
-  | Metal      { texture :: WorldTexture , fuzz  :: Double }
-  | Dielectric { ior :: Double }
-  | Emissive   { lightColor :: Color }
-  deriving (Show, Generic, Eq)
+data WorldMaterial
+    = Lambertian { texture :: WorldTexture }
+    | Metal { fuzz :: Double, texture :: WorldTexture }
+    | Dielectric { ior :: Double }
+    | Emissive { lightColor :: Color }
+    deriving ( Show, Generic, Eq )
 
 instance FromJSON WorldMaterial
 
 instance TMaterial WorldMaterial where
-  tmaterial :: WorldMaterial -> Material
-  tmaterial (Lambertian t) (ut, vt) _ n p v =
-    (ttexture t (ut, vt) p, Just $ Ray p (v `vadd` n))
+  tmaterial (Lambertian tex) (u, v) _ n p rvec =
+    (ttexture tex (u, v) p, Just $ Ray p (rvec `vadd` n))
 
-  tmaterial (Metal t f) (ut, vt) r n p v =
-    ( ttexture t (ut, vt) p
-    , Just $ Ray p (reflect (normalize (rayDirection r)) n `vadd` (f `vmul` v))
+  tmaterial (Metal fuz tex) (u, v) r n p rvec =
+    ( ttexture tex (u, v) p
+    , Just $ Ray
+      p
+      (reflect (normalize (rayDirection r)) n `vadd` (fuz `vmul` rvec))
     )
 
   tmaterial (Dielectric i) _ r n p _ = (Color 1 1 1, Just $ Ray p direction)
