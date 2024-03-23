@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module Color where
 
 import           Data.Yaml                      ( FromJSON(parseJSON)

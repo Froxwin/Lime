@@ -1,16 +1,20 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
+{-# LANGUAGE DataKinds #-}
 
 module Materials where
 
 import           Color                          ( Color(Color) )
-import           Data.Yaml                      ( FromJSON )
+import           Data.Aeson.Types               ( FromJSON(parseJSON)
+                                                , Parser
+                                                , Value
+                                                )
 import           GHC.Generics                   ( Generic )
 import           Ray                            ( Ray(Ray, rayDirection) )
-import           Textures                       ( TTexture(ttexture)
+import           Textures                       ( TTexture(texture)
                                                 , TextureCoords
                                                 , WorldTexture(SolidColor)
                                                 )
+import           Utils                          ( worldParse )
 import           Vector                         ( Vector
                                                 , dot
                                                 , normalize
@@ -25,34 +29,55 @@ type Material
   = TextureCoords -> Ray -> Vector -> Vector -> Vector -> (Color, Maybe Ray)
 
 class TMaterial a where
-    tmaterial :: a -> Material
+    material :: a -> Material
 
 data WorldMaterial
-    = Lambertian { texture :: WorldTexture }
-    | Metal { fuzz :: Double, texture :: WorldTexture }
-    | Dielectric { ior :: Double }
-    | Emissive { lightColor :: Color }
+    = Lambertian
+        { matTexture :: WorldTexture
+        }
+    | Metal
+        { matFuzz    :: Double
+        , matTexture :: WorldTexture
+        }
+    | Dielectric
+        { matIor :: Double
+        }
+    | Emissive
+        { matEmissionColor :: Color
+        }
     deriving ( Show, Generic, Eq )
 
-instance FromJSON WorldMaterial
+instance FromJSON WorldMaterial where
+  parseJSON :: Value -> Parser WorldMaterial
+  parseJSON = worldParse 3
 
 instance TMaterial WorldMaterial where
-  tmaterial (Lambertian tex) (u, v) _ n p rvec =
-    (ttexture tex (u, v) p, Just $ Ray p (rvec `vadd` n))
-
-  tmaterial (Metal fuz tex) (u, v) r n p rvec =
-    ( ttexture tex (u, v) p
+  material :: WorldMaterial -> Material
+  -----------------------------------------------------------------------------
+  -- Lambertian Material
+  -----------------------------------------------------------------------------
+  material (Lambertian tex) coords _ n p rvec =
+    (texture tex coords p, Just $ Ray p (rvec `vadd` n))
+  -----------------------------------------------------------------------------
+  -- Metallic Material
+  -----------------------------------------------------------------------------
+  material (Metal fuz tex) coords r n p rvec =
+    ( texture tex coords p
     , Just $ Ray
       p
       (reflect (normalize (rayDirection r)) n `vadd` (fuz `vmul` rvec))
     )
-
-  tmaterial (Dielectric i) _ r n p _ = (Color 1 1 1, Just $ Ray p direction)
+  -----------------------------------------------------------------------------
+  -- Dielectric Material
+  -----------------------------------------------------------------------------
+  material (Dielectric i) _ r n p _ = (Color 1 1 1, Just $ Ray p direction)
    where
     ratio     = if rayDirection r `dot` n < 0 then 1 / i else i
     direction = if rayDirection r `dot` n > 0
       then refract (normalize (rayDirection r)) (vneg n) ratio
       else refract (normalize (rayDirection r)) n ratio
-
-  tmaterial (Emissive lc) (u, v) _ _ p _ =
-    (ttexture (SolidColor lc) (u, v) p, Nothing)
+  -----------------------------------------------------------------------------
+  -- Emissive Material
+  -----------------------------------------------------------------------------
+  material (Emissive lc) coords _ _ p _ =
+    (texture (SolidColor lc) coords p, Nothing)

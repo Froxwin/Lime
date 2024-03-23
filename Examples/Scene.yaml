@@ -9,8 +9,7 @@ camera:
   field-of-view: 1.57
   upward-vector: [0, 1, 0]
   defocus-angle: 0.05
-  background-color: [255,0,0]
-texture-files: []
+  background-color: [0, 0, 0]
 world:
   - tag: Sphere
     center: [0, -100.5, 0]
@@ -26,7 +25,7 @@ world:
     radius: 100
     material:
       tag: Emissive
-      lightColor: [255, 255, 255]
+      emission-color: [255, 255, 255]
   - tag: Sphere
     center: [0, 0.8, 0]
     radius: 1
@@ -44,8 +43,8 @@ world:
       texture:
         tag: Checkered
         scale: 1
-        color1: [255,0,0]
-        color2: [0,0,255]
+        color1: [255, 0, 0]
+        color2: [0, 0, 255]
   - tag: Sphere
     center: [1, 0.5, 2]
     radius: 1
@@ -54,5 +53,5 @@ world:
       texture:
         tag: Checkered
         scale: 1
-        color1: [0,255,0]
-        color2: [0,0,255]
+        color1: [0, 255, 0]
+        color2: [0, 0, 255]

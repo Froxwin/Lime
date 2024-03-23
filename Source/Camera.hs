@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Camera where
@@ -16,7 +15,9 @@ import           Data.Maybe                     ( fromJust
                                                 , isJust
                                                 , mapMaybe
                                                 )
-import           Data.Yaml                      ( (.:)
+import           Data.Yaml                      ( (.!=)
+                                                , (.:)
+                                                , (.:?)
                                                 , FromJSON(parseJSON)
                                                 , Parser
                                                 , Value(Object)
@@ -25,11 +26,13 @@ import           GHC.Generics                   ( Generic )
 import           Primitives                     ( Primitive
                                                 , TWorldObject
                                                   ( boundingBox
-                                                  , tprimitive
+                                                  , primitive
                                                   )
                                                 , WorldObject
                                                 )
+
 import           Ray                            ( Ray(..) )
+import           Utils                          ( worldParse )
 import           Vector                         ( Vector(Vector)
                                                 , cross
                                                 , dot
@@ -52,13 +55,9 @@ rayColor r ls sampleRay depth background
   | otherwise = background
  where
   v = if sampleRay `dot` n > 0 then sampleRay else vneg sampleRay
-
   hitting ray tMin tMax f = f ray tMin tMax
-
   (q, w)           = m tc r n p v
-
-  (n, p, t, m, tc) = head hs
-
+  (n, p, _, m, tc) = head hs
   hs =
     sortBy
         (\(_, p1, _, _, _) (_, p2, _, _, _) ->
@@ -75,15 +74,15 @@ rayColor r ls sampleRay depth background
   The function implements anti-aliasing via grid supersampling with sample size
   'samplesPerPixel'.
 -}
-render :: Scene -> [(String, DynamicImage)] -> ([Color], AABB)
+render :: Scene -> [(String, DynamicImage)] -> [Color]
 render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da bg) _ wrld) _wq
-  = ([ correctGamma $ foldl
+  = [ correctGamma $ foldl
         addColor
         (Color 0 0 0)
         [ (1 / (fromIntegral (length sampleSquare) ^ 3))
             `scaleColor` rayColor
                            (Ray diskSample (pixelSample `vsub` diskSample))
-                           (map tprimitive wrld)
+                           (map primitive wrld)
                            (Vector sx sy sz)
                            m
                            bg
@@ -99,34 +98,26 @@ render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da bg)
         ]
     | vi <- reverse $ scanline $ fromIntegral imgHeight
     , ui <- scanline $ fromIntegral imgWidth
-    ], wbox)
+    ]
  where
-  wbox = foldl (\x1 x2 -> AABBbox x1 x2)
-               (AABB (Vector 0 0 0) (Vector 0 0 0))
-               (map boundingBox wrld)
-
+  _wbox = foldl (\x1 x2 -> AABBbox x1 x2)
+                (AABB (Vector 0 0 0) (Vector 0 0 0))
+                (map boundingBox wrld)
   scanline q = map (/ q) [0 .. q - 1]
-
   sampleSquare =
     [-1, (-1 + (1 / ((((nsamples ** (1 / 3)) - 3) / 2) + 1))) .. 1]
 
   -- camera
   w              = normalize (origin `vsub` lookAt)
-
   u              = normalize $ cross up w
-
   v              = cross w u
 
   -- viewport
   viewportHeight = 2 * tan (f / 2) * fl
-
   viewportWidth =
     viewportHeight * (fromIntegral imgWidth / fromIntegral imgHeight)
-
   horizontal = viewportWidth `vmul` u
-
   vertical   = viewportHeight `vmul` v
-
   bottomLeft =
     origin
       `vsub` (2 `vdiv` horizontal)
@@ -135,42 +126,24 @@ render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da bg)
 
   -- aperture
   diskRadius = fl * tan (da / 2)
-
   diskU      = diskRadius `vmul` u
-
   diskV      = diskRadius `vmul` v
 
 -- | Represents camera configuration
 data Camera = Camera
-  { position     :: Vector -- ^ Point from where the camera is looking
-  , lookingAt    :: Vector -- ^ Point in which direction the camera is looking
-  , focalLength  :: Double -- ^ Focal length of camera
-  , fov          :: Double -- ^ Horizontal field of view angle
-  , upVector     :: Vector -- ^ Upward direction of camera
-  , defocusAngle :: Double -- ^ Angle subtended by lens aperture
-  , defaultColor :: Color
+  { camPosition        :: Vector -- ^ Point from where the camera is looking
+  , camLookingAt       :: Vector -- ^ Point in which direction the camera is looking
+  , camFocalLength     :: Double -- ^ Focal length of camera
+  , camFieldOfView     :: Double -- ^ Horizontal field of view angle
+  , camUpwardVector        :: Vector -- ^ Upward direction of camera
+  , camDefocusAngle    :: Double -- ^ Angle subtended by lens aperture
+  , camBackgroundColor :: Color  -- ^ Color of rays that do not hit any object
   }
   deriving (Show, Generic)
 
 instance FromJSON Camera where
   parseJSON :: Value -> Parser Camera
-  parseJSON (Object v) =
-    Camera
-      <$> v
-      .:  "position"
-      <*> v
-      .:  "looking-at"
-      <*> v
-      .:  "focal-length"
-      <*> v
-      .:  "field-of-view"
-      <*> v
-      .:  "upward-vector"
-      <*> v
-      .:  "defocus-angle"
-      <*> v
-      .:  "background-color"
-  parseJSON _ = error "Can't parse Camera from YAML"
+  parseJSON = worldParse 3
 
 -- | Represents a world scene
 data Scene = Scene
@@ -199,7 +172,8 @@ instance FromJSON Scene where
       <*> v
       .:  "camera"
       <*> v
-      .:  "texture-files"
+      .:? "texture-files"
+      .!= []
       <*> v
       .:  "world"
   parseJSON _ = error "Can not parse Scene from YAML"

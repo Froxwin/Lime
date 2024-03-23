@@ -10,8 +10,6 @@ camera:
   upward-vector: [0, 1, 0]
   defocus-angle: 0.05
   background-color: [48, 36, 76]
-  # background-color: [236, 246, 255]
-texture-files: []
 world:
   - tag: Sphere
     center: [0, -100.5, 0]
@@ -30,17 +28,17 @@ world:
       texture:
         tag: SolidColor
         color: [255, 143, 107]
-  # - tag: Quad
-  #   corner: [1.5, 0, -1]
-  #   quadU: [0, 0, 1]
-  #   quadV: [0, 1, 0]
-  #   material:
-  #     tag: Emissive
-  #     lightColor: [188, 255, 164]
-  # - tag: Quad
-  #   corner: [-1.5, 0, -1]
-  #   quadU: [0, 0, 1]
-  #   quadV: [0, 1, 0]
-  #   material:
-  #     tag: Emissive
-  #     lightColor: [188, 255, 164]
+  - tag: Quad
+    corner: [1.5, 0, -1]
+    quad-u: [0, 0, 1]
+    quad-v: [0, 1, 0]
+    material:
+      tag: Emissive
+      emission-color: [188, 255, 164]
+  - tag: Quad
+    corner: [-1.5, 0, -1]
+    quad-u: [0, 0, 1]
+    quad-v: [0, 1, 0]
+    material:
+      tag: Emissive
+      emission-color: [188, 255, 164]

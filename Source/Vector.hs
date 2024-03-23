@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module Vector where
 
 import           Data.Yaml                      ( FromJSON(parseJSON)
@@ -8,7 +6,6 @@ import           Data.Yaml                      ( FromJSON(parseJSON)
                                                 )
 import           GHC.Generics                   ( Generic )
 
--- | Represents a 3D vector with fields corresponding to each component
 data Vector = Vector
   { vx :: Double
   , vy :: Double
@@ -43,14 +40,14 @@ normalize v = magnitude v `vdiv` v
 
 -- | Reflects a vector with respect to the given surface normal
 --
--- @ reflect :: Incident Vector -> Surface Normal -> Reflected Vector @
+-- > reflect :: Incident Vector -> Surface Normal -> Reflected Vector
 reflect :: Vector -> Vector -> Vector
 reflect v n = v `vsub` ((2 * (v `dot` n)) `vmul` n)
 
 -- | Refracts a vector with respect to the given surface normal and relative
 -- refractive index of the interface
 --
--- @ refract :: Incident Vector -> Surface Normal -> Relative IOR -> Refracted Vector @
+-- > refract :: Incident Vector -> Surface Normal -> Relative IOR -> Refracted Vector
 refract :: Vector -> Vector -> Double -> Vector
 refract v n mu = rperp `vadd` rpara
  where

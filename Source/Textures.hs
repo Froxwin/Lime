@@ -1,51 +1,66 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Textures where
 
 import           Color                          ( Color )
-import           Data.Yaml
+import           Data.Aeson.Types               ( FromJSON(parseJSON)
+                                                , Parser
+                                                , Value
+                                                )
 import           GHC.Generics                   ( Generic )
+import           Utils                          ( worldParse )
 import           Vector                         ( Vector(Vector) )
 
+type Texture = TextureCoords -> Vector -> Color
 type TextureCoords = (Double, Double)
 
-type Texture = TextureCoords -> Vector -> Color
-
 class TTexture a where
-  ttexture :: a -> Texture
+  texture :: a -> Texture
 
 data WorldTexture
-    = SolidColor { color :: Color }
-    | Checkered { scale :: Double, color1 :: Color, color2 :: Color }
+    = SolidColor
+        { texColor :: Color
+        }
+    | Checkered
+        { texScale  :: Double
+        , texColor1 :: Color
+        , texColor2 :: Color
+        }
     deriving ( Show, Generic, Eq )
 
 instance FromJSON WorldTexture where
+  parseJSON :: Value -> Parser WorldTexture
+  parseJSON = worldParse 3
 
 instance TTexture WorldTexture where
-  ttexture :: WorldTexture -> Texture
-  ttexture (SolidColor c     ) _      _                   = c
-  ttexture (Checkered k c1 c2) (u, v) p@(Vector px py pz) = if isEven
-    then ttexture (SolidColor c1) (u, v) p
-    else ttexture (SolidColor c2) (u, v) p
+  texture :: WorldTexture -> Texture
+  -----------------------------------------------------------------------------
+  -- Solid Texture
+  -----------------------------------------------------------------------------
+  texture (SolidColor color) _ _ = color
+  -----------------------------------------------------------------------------
+  -- Checkered Texture
+  -----------------------------------------------------------------------------
+  texture (Checkered k c1 c2) coords p
+    | isEven p  = texture (SolidColor c1) coords p
+    | otherwise = texture (SolidColor c2) coords p
    where
-    xInt   = floor (1 / k * px)
-    yInt   = floor (1 / k * py)
-    zInt   = floor (1 / k * pz)
-    isEven = even (xInt + yInt + zInt)
-
-    -- FIXME image textures are too slow to be usable
-    -- imageTexture :: DynamicImage -> Texture
-    -- imageTexture img (u, v) p = pixel
-    --  where
-    --   img8 = convertRGB8 img
-    --   i    = u * fromIntegral (imageWidth img8)
-    --   j    = v * fromIntegral (imageHeight img8)
-    --   pixel =
-    --     (\(PixelRGB8 r g b) -> Color
-    --         ((fromIntegral (toInteger r) :: Double) / 255)
-    --         ((fromIntegral (toInteger g) :: Double) / 255)
-    --         ((fromIntegral (toInteger b) :: Double) / 255)
-    --       )
-    --       (pixelAt img8 (round i) (round j))
+    qInt q = floor (1 / k * q)
+    isEven (Vector px py pz) = even (qInt px + qInt py + qInt pz)
+  -----------------------------------------------------------------------------
+  -- Image Texture
+  -----------------------------------------------------------------------------
+  -- FIXME image textures are too slow to be usable
+  -- imageTexture :: DynamicImage -> Texture
+  -- imageTexture img (u, v) p = pixel
+  --  where
+  --   img8 = convertRGB8 img
+  --   i    = u * fromIntegral (imageWidth img8)
+  --   j    = v * fromIntegral (imageHeight img8)
+  --   pixel =
+  --     (\(PixelRGB8 r g b) -> Color
+  --         ((fromIntegral (toInteger r) :: Double) / 255)
+  --         ((fromIntegral (toInteger g) :: Double) / 255)
+  --         ((fromIntegral (toInteger b) :: Double) / 255)
+  --       )
+  --       (pixelAt img8 (round i) (round j))

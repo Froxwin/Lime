@@ -1,7 +1,7 @@
+{-# OPTIONS_GHC -Wno-partial-fields #-}
+
 module Bounds where
 
-import           Color
-import           Data.Tuple
 import           Ray
 import           Vector
 
@@ -11,6 +11,7 @@ class Box a where
     zbx :: a -> ( Double, Double )
 
 data AABB = AABB { a :: Vector, b :: Vector }
+          | AABBq { xs :: (Double, Double), ys :: (Double, Double), zs :: (Double, Double) }
           | AABBbox { box0 :: AABB, box1 :: AABB }
           deriving (Show)
 
@@ -19,17 +20,33 @@ data AABB = AABB { a :: Vector, b :: Vector }
 --   ybx (AABBbox b0 b1) = (fst $ ybx b0, snd $ ybx b1)
 --   zbx (AABBbox b0 b1) = (fst $ zbx b0, snd $ zbx b1)
 
+pad :: Box p => p -> AABB
+pad aabb = AABBq nxbx nybx nzbx
+ where
+  delta      = 0.01
+  padding    = delta / 2
+  x@(x1, x2) = xbx aabb
+  y@(y1, y2) = ybx aabb
+  z@(z1, z2) = zbx aabb
+  nxbx       = if x2 - x1 >= delta then x else (x1 - padding, x2 + padding)
+  nybx       = if y2 - y1 >= delta then y else (y1 - padding, y2 + padding)
+  nzbx       = if z2 - z1 >= delta then z else (z1 - padding, z2 + padding)
+
 instance Box AABB where
-  xbx (AABB    a  b ) = (min (vx a) (vx b), max (vx a) (vx b))
+  xbx (AABB    aw bw) = (min (vx aw) (vx bw), max (vx aw) (vx bw))
   xbx (AABBbox b0 b1) = (fst $ xbx b0, snd $ xbx b1)
+  xbx (AABBq x _ _  ) = x
 
-  ybx (AABB    a  b ) = (min (vy a) (vy b), max (vy a) (vy b))
+  ybx (AABB    aw bw) = (min (vy aw) (vy bw), max (vy aw) (vy bw))
   ybx (AABBbox b0 b1) = (fst $ ybx b0, snd $ ybx b1)
+  ybx (AABBq _ y _  ) = y
 
-  zbx (AABB    a  b ) = (min (vz a) (vz b), max (vz a) (vz b))
+  zbx (AABB    aw bw) = (min (vz aw) (vz bw), max (vz aw) (vz bw))
   zbx (AABBbox b0 b1) = (fst $ zbx b0, snd $ zbx b1)
+  zbx (AABBq _ _ z  ) = z
 
-hit aabb ray@(Ray o d) rayT@(mi, ma) = map
+hit :: Box p => p -> Ray -> (Double, Double) -> [Maybe (Double, Double)]
+hit aabb (Ray o d) (mi, ma) = map
   (\i ->
     let invD = 1 / comp i d
         orig = comp i o

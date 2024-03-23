@@ -22,6 +22,7 @@ source-repository head
 
 common depends
   build-depends:
+    , aeson        >=2.2.1   && <2.3
     , base         >=4.17.2  && <4.18
     , directory    >=1.3.7   && <1.4
     , JuicyPixels  >=3.3.8   && <3.4
@@ -40,7 +41,9 @@ common flags
     -Wincomplete-record-updates -Wincomplete-uni-patterns
     -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
 
-  default-extensions: InstanceSigs
+  default-extensions:
+    DeriveGeneric
+    InstanceSigs
 
 library
   import:          depends, flags
@@ -54,10 +57,11 @@ library
     Primitives
     Ray
     Textures
+    Utils
     Vector
 
 executable Lime
-  import:         depends, flags
+  import:         depends, flags, executable-flags
   hs-source-dirs: App
   main-is:        Main.hs
   build-depends:
