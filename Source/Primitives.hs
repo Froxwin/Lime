@@ -53,7 +53,7 @@ data WorldObject
         , primQuadV    :: Vector
         , primMaterial :: WorldMaterial
         }
-    deriving ( Show, Generic )
+    deriving ( Show, Generic, Eq )
 
 instance FromJSON WorldObject where
   parseJSON :: Value -> Parser WorldObject

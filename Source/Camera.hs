@@ -100,9 +100,8 @@ render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da bg)
     , ui <- scanline $ fromIntegral imgWidth
     ]
  where
-  _wbox = foldl (\x1 x2 -> AABBbox x1 x2)
-                (AABB (Vector 0 0 0) (Vector 0 0 0))
-                (map boundingBox wrld)
+  _wbox =
+    foldl AABBbox (AABB (Vector 0 0 0) (Vector 0 0 0)) (map boundingBox wrld)
   scanline q = map (/ q) [0 .. q - 1]
   sampleSquare =
     [-1, (-1 + (1 / ((((nsamples ** (1 / 3)) - 3) / 2) + 1))) .. 1]
@@ -135,11 +134,11 @@ data Camera = Camera
   , camLookingAt       :: Vector -- ^ Point in which direction the camera is looking
   , camFocalLength     :: Double -- ^ Focal length of camera
   , camFieldOfView     :: Double -- ^ Horizontal field of view angle
-  , camUpwardVector        :: Vector -- ^ Upward direction of camera
+  , camUpwardVector    :: Vector -- ^ Upward direction of camera
   , camDefocusAngle    :: Double -- ^ Angle subtended by lens aperture
   , camBackgroundColor :: Color  -- ^ Color of rays that do not hit any object
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, Eq)
 
 instance FromJSON Camera where
   parseJSON :: Value -> Parser Camera
@@ -155,7 +154,7 @@ data Scene = Scene
   , textures  :: [(String, FilePath)]
   , world     :: [WorldObject]
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, Eq)
 
 instance FromJSON Scene where
   parseJSON :: Value -> Parser Scene

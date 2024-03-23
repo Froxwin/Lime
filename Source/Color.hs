@@ -17,9 +17,7 @@ data Color = Color
 -- | Converts a color to string while also converting the color channels to 8bit rgb
 instance Show Color where
   show :: Color -> String
-  show (Color r g b) = concat $ (flip $ zipWith (++)) [" ", " ", ""] $ map
-    (show . round . (* 255))
-    [r, g, b]
+  show (Color r g b) = show $ map (round . (* 255)) [r, g, b]
 
 instance FromJSON Color where
   parseJSON :: Value -> Parser Color

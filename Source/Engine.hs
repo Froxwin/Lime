@@ -2,11 +2,19 @@
 
 module Engine where
 
-import           Camera        (Scene (height, textures, width), render)
-import           Codec.Picture (DynamicImage, PixelRGB8 (PixelRGB8),
-                                generateImage, readImage, writePng)
-import           Color         (Color (Color))
-import           Data.Yaml     (decodeFileEither, prettyPrintParseException)
+import           Camera                         ( Scene(height, textures, width)
+                                                , render
+                                                )
+import           Codec.Picture                  ( DynamicImage
+                                                , PixelRGB8(PixelRGB8)
+                                                , generateImage
+                                                , readImage
+                                                , writePng
+                                                )
+import           Color                          ( Color(Color) )
+import           Data.Yaml                      ( decodeFileEither
+                                                , prettyPrintParseException
+                                                )
 
 group :: Int -> [a] -> [[a]]
 group _ [] = []

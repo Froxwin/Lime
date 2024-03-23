@@ -29,6 +29,7 @@ common depends
     , parallel     >=3.2.2   && <3.3
     , process      >=1.6.18  && <1.7
     , yaml         >=0.11.11 && <0.12
+    , text, bytestring
 
   default-language: Haskell2010
 
