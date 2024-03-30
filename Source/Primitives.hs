@@ -7,6 +7,9 @@ import           Data.Aeson.Types               ( FromJSON(parseJSON)
                                                 , Parser
                                                 , Value
                                                 )
+import           Data.List                      ( sort
+                                                , sortBy
+                                                )
 import           Data.Maybe                     ( fromJust
                                                 , isJust
                                                 , isNothing
@@ -125,8 +128,7 @@ instance TWorldObject WorldObject where
   boundingBox (Quad q u v _) = AABB q (q `vadd` u `vadd` v)
 
 data BVHNode = BVHNode
-  { ls    :: [Primitive]
-  , bbox  :: AABB
+  { bbox  :: AABB
   , left  :: Primitive
   , right :: Primitive
   }
@@ -143,4 +145,43 @@ instance TWorldObject BVHNode where
     hitRight = isJust $ right aabb ray tMin (if hitLeft then t else tMax)
     rft = fromJust $ right aabb ray tMin (if hitLeft then t else tMax)
 
-  boundingBox (BVHNode _ qw _ _) = qw
+  boundingBox (BVHNode qw _ _) = qw
+
+-- boxCompare :: (TWorldObject a1, TWorldObject a2) => a1 -> a2 -> Int -> Bool
+-- boxCompare a b axis_index = fst (axis (boundingBox a))
+--   < fst (axis (boundingBox b))
+--   where axis = [xbx, ybx, zbx] !! axis_index
+
+-- boxCompareX :: (TWorldObject a1, TWorldObject a2) => a1 -> a2 -> Bool
+-- boxCompareX a b = boxCompare a b 0
+-- boxCompareY :: (TWorldObject a1, TWorldObject a2) => a1 -> a2 -> Bool
+-- boxCompareY a b = boxCompare a b 1
+-- boxCompareZ :: (TWorldObject a1, TWorldObject a2) => a1 -> a2 -> Bool
+-- boxCompareZ a b = boxCompare a b 2
+
+-- maekNode objs st end = BVHNode objs lft rft
+--  where
+--   axis      = 1
+--   doohickey = [xbx, ybx, zbx] !! axis
+--   theThingamabob a b =
+--     compare (fst (doohickey (boundingBox a))) (fst (doohickey (boundingBox b)))
+--   comparator :: (TWorldObject a1, TWorldObject a2) => a1 -> a2 -> Bool
+--   comparator | axis == 0 = boxCompareX
+--              | axis == 1 = boxCompareY
+--              | axis == 2 = boxCompareZ
+--              | otherwise = error "what, how"
+--   spann = end - st
+--   lft
+--     | spann == 1 = objs !! st
+--     | spann == 2 = if comparator (objs !! st) (objs !! (st + 1))
+--       then objs !! st
+--       else objs !! (st + 1)
+--     | otherwise = left $ maekNode sorded st mid
+--   rft
+--     | spann == 1 = objs !! st
+--     | spann == 2 = if comparator (objs !! st) (objs !! (st + 1))
+--       then objs !! (st + 1)
+--       else objs !! st
+--     | otherwise = right $ maekNode sorded mid end
+--   mid = st + (spann `div` 2)
+--   sorded = sortBy theThingamabob $ take spann $ drop st objs

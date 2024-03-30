@@ -15,11 +15,6 @@ data AABB = AABB { a :: Vector, b :: Vector }
           | AABBbox { box0 :: AABB, box1 :: AABB }
           deriving (Show)
 
--- instance Box AABBbox where
---   xbx (AABBbox b0 b1) = (fst $ xbx b0, snd $ xbx b1)
---   ybx (AABBbox b0 b1) = (fst $ ybx b0, snd $ ybx b1)
---   zbx (AABBbox b0 b1) = (fst $ zbx b0, snd $ zbx b1)
-
 pad :: Box p => p -> AABB
 pad aabb = AABBq nxbx nybx nzbx
  where

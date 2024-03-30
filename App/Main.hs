@@ -3,33 +3,28 @@
 module Main where
 
 
-import           Engine                         ( ignite )
-import           System.Console.CmdArgs         ( (&=)
-                                                , Data
-                                                , Default(def)
-                                                , Typeable
-                                                , cmdArgs
-                                                , help
-                                                , summary
-                                                , typ
-                                                )
+import           Engine                 (ignite)
+import           System.Console.CmdArgs (Data, Default (def), Typeable, cmdArgs,
+                                         help, summary, typFile, (&=))
 
 data Lime = Lime
-  { input  :: String
-  , output :: String
-  , preview  :: Bool
+  { input   :: FilePath
+  , output  :: FilePath
+  , preview :: Bool
   }
   deriving (Show, Data, Typeable)
 
 lime :: Lime
 lime =
-  Lime { input  = def &= help "input file" &= typ "INPUTFILE"
-       , output = def &= help "output file" &= typ "OUTPUTFILE"
-       , preview  = def &= help "render a preview image"
+  Lime { input   = def &= help "File with scene to be rendered" &= typFile
+       , output  = def &= help "Output image file" &= typFile
+       , preview = def &= help "Whether to render a preview image"
        }
     &= summary "Lime 0.1.0.0 (c) Froxwin"
 
 main :: IO ()
 main = do
   (Lime i o p) <- cmdArgs lime
-  ignite i o p
+  if i == "" || o == ""
+    then errorWithoutStackTrace "\ESC[31mProvide valid arguments\ESC[0m"
+    else ignite i o p

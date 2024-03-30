@@ -1,6 +1,7 @@
-{ pkgs ? import <nixpkgs> {} }:
-let
-  hsPkgs = nixpkgs.haskell.packages.ghc902;
-  project = hsPkgs.callCabal2nix "Lime" ./. { };
-in
-hsPkgs.callPackage project {}
+{ pkgs ? import <nixpkgs> { } }:
+pkgs.haskellPackages.developPackage {
+  root = ./.;
+  modifier = drv:
+    pkgs.haskell.lib.addBuildTools drv
+    (with pkgs.haskellPackages; [ cabal-install ghc ]);
+}

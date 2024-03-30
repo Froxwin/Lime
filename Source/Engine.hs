@@ -2,7 +2,16 @@
 
 module Engine where
 
-import           Camera                         ( Scene(height, textures, width)
+import           Camera                         ( Camera(camBackgroundColor)
+                                                , Scene
+                                                  ( camera
+                                                  , height
+                                                  , maxBounce
+                                                  , samples
+                                                  , textures
+                                                  , width
+                                                  , world
+                                                  )
                                                 , render
                                                 )
 import           Codec.Picture                  ( DynamicImage
@@ -15,6 +24,13 @@ import           Color                          ( Color(Color) )
 import           Data.Yaml                      ( decodeFileEither
                                                 , prettyPrintParseException
                                                 )
+import           Materials                      ( WorldMaterial
+                                                  ( Emissive
+                                                  , Lambertian
+                                                  )
+                                                )
+import           Primitives                     ( WorldObject(primMaterial) )
+import           Textures                       ( WorldTexture(SolidColor) )
 
 group :: Int -> [a] -> [[a]]
 group _ [] = []
@@ -30,9 +46,26 @@ loadTextures scene = mapM loadTexture $ textures scene
 getPix :: [Color] -> Int -> Int -> Int -> Color
 getPix img w x y = img !! ((w * y) + x)
 
-ignite :: String -> String -> Bool -> IO ()
-ignite input output _preview = do
-  !scene <- either (error . prettyPrintParseException) id
+convertToPreview :: Scene -> Scene
+convertToPreview scene = scene
+  { height    = 255
+  , width     = 400
+  , samples   = 50
+  , maxBounce = 2
+  , camera    = (camera scene) { camBackgroundColor = Color 1 1 1 }
+  , world     = map
+    (\x -> case primMaterial x of
+      Emissive _ -> x
+      _ -> x { primMaterial = Lambertian (SolidColor (Color 0.6 0.6 0.6)) }
+    )
+    (world scene)
+  }
+
+ignite :: FilePath -> FilePath -> Bool -> IO ()
+ignite input output preview = do
+  !scene <-
+    (\x -> if preview then convertToPreview x else x)
+    .   either (error . prettyPrintParseException) id
     <$> decodeFileEither input
   !texs <- loadTextures scene
   let !pixelData = group (width scene) $ render scene texs
