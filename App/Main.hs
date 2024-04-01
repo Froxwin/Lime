@@ -3,9 +3,9 @@
 module Main where
 
 
-import           Engine                 (ignite)
-import           System.Console.CmdArgs (Data, Default (def), Typeable, cmdArgs,
-                                         help, summary, typFile, (&=))
+import Engine                 (ignite)
+import System.Console.CmdArgs (Data, Default (def), Typeable, cmdArgs, help,
+                               summary, typFile, (&=))
 
 data Lime = Lime
   { input   :: FilePath

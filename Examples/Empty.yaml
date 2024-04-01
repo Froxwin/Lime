@@ -11,34 +11,34 @@ camera:
   defocus-angle: 0.05
   background-color: [48, 36, 76]
 world:
-  - tag: Sphere
+  - tag: sphere
     center: [0, -100.5, 0]
     radius: 100
     material:
-      tag: Lambertian
+      tag: lambertian
       texture:
-        tag: SolidColor
+        tag: solid-color
         color: [184, 187, 38]
-  - tag: Sphere
+  - tag: sphere
     center: [0, 0.7, 0.5]
     radius: 1
     material:
-      tag: Metal
+      tag: metal
       fuzz: 0.2
       texture:
-        tag: SolidColor
+        tag: solid-color
         color: [255, 143, 107]
-  - tag: Quad
+  - tag: quad
     corner: [1.5, 0, -1]
     quad-u: [0, 0, 1]
     quad-v: [0, 1, 0]
     material:
-      tag: Emissive
+      tag: emissive
       emission-color: [188, 255, 164]
-  - tag: Quad
+  - tag: quad
     corner: [-1.5, 0, -1]
     quad-u: [0, 0, 1]
     quad-v: [0, 1, 0]
     material:
-      tag: Emissive
+      tag: emissive
       emission-color: [188, 255, 164]

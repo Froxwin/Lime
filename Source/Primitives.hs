@@ -2,37 +2,16 @@
 
 module Primitives where
 
-import           Bounds                  hiding ( a )
-import           Data.Aeson.Types               ( FromJSON(parseJSON)
-                                                , Parser
-                                                , Value
-                                                )
-import           Data.List                      ( sort
-                                                , sortBy
-                                                )
-import           Data.Maybe                     ( fromJust
-                                                , isJust
-                                                , isNothing
-                                                )
-import           GHC.Generics                   ( Generic )
-import           Materials                      ( Material
-                                                , TMaterial(material)
-                                                , WorldMaterial
-                                                )
-import           Ray                            ( Ray(Ray)
-                                                , rayAt
-                                                )
-import           Textures                       ( TextureCoords )
-import           Utils                          ( worldParse )
-import           Vector                         ( Vector(Vector)
-                                                , cross
-                                                , dot
-                                                , magnitude
-                                                , normalize
-                                                , vadd
-                                                , vmul
-                                                , vsub
-                                                )
+import Bounds           (AABB (AABB))
+import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
+import Data.Maybe       (fromJust, isJust, isNothing)
+import GHC.Generics     (Generic)
+import Materials        (Material, TMaterial (material), WorldMaterial)
+import Ray              (Ray (Ray), rayAt)
+import Textures         (TextureCoords)
+import Utils            (worldParse)
+import Vector           (Vector (Vector), cross, dot, magnitude,
+                         magnitudeSquare, normalize, vadd, vmul, vsub)
 
 type Primitive
   =  Ray
@@ -41,22 +20,22 @@ type Primitive
   -> Maybe (Vector, Vector, Double, Material, TextureCoords)
 
 class TWorldObject a where
-    primitive :: a -> Primitive
-    boundingBox :: a -> AABB
+  primitive :: a -> Primitive
+  boundingBox :: a -> AABB
 
 data WorldObject
-    = Sphere
-        { primCenter   :: Vector
-        , primRadius   :: Double
-        , primMaterial :: WorldMaterial
-        }
-    | Quad
-        { primCorner   :: Vector
-        , primQuadU    :: Vector
-        , primQuadV    :: Vector
-        , primMaterial :: WorldMaterial
-        }
-    deriving ( Show, Generic, Eq )
+  = Sphere
+      { primCenter   :: Vector,
+        primRadius   :: Double,
+        primMaterial :: WorldMaterial
+      }
+  | Quad
+      { primCorner   :: Vector,
+        primQuadU    :: Vector,
+        primQuadV    :: Vector,
+        primMaterial :: WorldMaterial
+      }
+  deriving (Show, Generic, Eq)
 
 instance FromJSON WorldObject where
   parseJSON :: Value -> Parser WorldObject
@@ -77,11 +56,8 @@ instance TWorldObject WorldObject where
       else Nothing
    where
     delta =
-      (d `dot` (a `vsub` c))
-        ^ 2
-        - magnitude d
-        ^ 2
-        * (magnitude (a `vsub` c) ^ 2 - r ^ 2)
+      ((d `dot` (a `vsub` c)) ^ 2)
+        - (magnitudeSquare d * (magnitudeSquare (a `vsub` c) - r ^ 2))
     root pm = ((-(d `dot` (a `vsub` c))) `pm` sqrt delta) / magnitude d ^ 2
     t     = root (+)
     t'    = root (-)

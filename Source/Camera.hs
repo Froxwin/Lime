@@ -2,47 +2,20 @@
 
 module Camera where
 
-import           Bounds
-import           Codec.Picture                  ( DynamicImage )
-import           Color                          ( Color(Color)
-                                                , addColor
-                                                , correctGamma
-                                                , scaleColor
-                                                , scaleColor'
-                                                )
-import           Data.List                      ( sortBy )
-import           Data.Maybe                     ( fromJust
-                                                , isJust
-                                                , mapMaybe
-                                                )
-import           Data.Yaml                      ( (.!=)
-                                                , (.:)
-                                                , (.:?)
-                                                , FromJSON(parseJSON)
-                                                , Parser
-                                                , Value(Object)
-                                                )
-import           GHC.Generics                   ( Generic )
-import           Primitives                     ( Primitive
-                                                , TWorldObject
-                                                  ( boundingBox
-                                                  , primitive
-                                                  )
-                                                , WorldObject
-                                                )
-
-import           Ray                            ( Ray(..) )
-import           Utils                          ( worldParse )
-import           Vector                         ( Vector(Vector)
-                                                , cross
-                                                , dot
-                                                , normalize
-                                                , vadd
-                                                , vdiv
-                                                , vmul
-                                                , vneg
-                                                , vsub
-                                                )
+import Bounds        (AABB (AABB, AABBbox))
+import Codec.Picture (DynamicImage)
+import Color         (Color (Color), addColor, correctGamma, scaleColor,
+                      scaleColor')
+import Data.List     (sortBy)
+import Data.Maybe    (fromJust, isJust, mapMaybe)
+import Data.Yaml     (FromJSON (parseJSON), Parser, Value)
+import GHC.Generics  (Generic)
+import Primitives    (Primitive, TWorldObject (boundingBox, primitive),
+                      WorldObject)
+import Ray           (Ray (..))
+import Utils         (worldParse)
+import Vector        (Vector (Vector), cross, dot, normalize, vadd, vdiv, vmul,
+                      vneg, vsub)
 
 -- | The 'rayColor' function computes the color of a ray.
 rayColor :: Ray -> [Primitive] -> Vector -> Int -> Color -> Color
@@ -65,15 +38,13 @@ rayColor r ls sampleRay depth background
         )
       $ mapMaybe (hitting r 0.001 (1 / 0)) ls
 
-{-|
-  The 'render' function generates a list of rays directed from the camera to the
-  viewport.
-
-  The generation is done __left-to-right__ and __top-to-bottom__.
-
-  The function implements anti-aliasing via grid supersampling with sample size
-  'samplesPerPixel'.
--}
+-- |
+--  The 'render' function generates a list of rays directed from the camera to the
+--  viewport.
+--
+--  The generation is done __left-to-right__ and __top-to-bottom__.
+--
+--  The function employs grid supersampling with sample size 'samplesPerPixel'.
 render :: Scene -> [(String, DynamicImage)] -> [Color]
 render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da bg) _ wrld) _wq
   = [ correctGamma $ foldl
@@ -130,13 +101,13 @@ render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da bg)
 
 -- | Represents camera configuration
 data Camera = Camera
-  { camPosition        :: Vector -- ^ Point from where the camera is looking
-  , camLookingAt       :: Vector -- ^ Point in which direction the camera is looking
-  , camFocalLength     :: Double -- ^ Focal length of camera
-  , camFieldOfView     :: Double -- ^ Horizontal field of view angle
-  , camUpwardVector    :: Vector -- ^ Upward direction of camera
-  , camDefocusAngle    :: Double -- ^ Angle subtended by lens aperture
-  , camBackgroundColor :: Color  -- ^ Color of rays that do not hit any object
+  { camPosition        :: Vector
+  , camLookingAt       :: Vector
+  , camFocalLength     :: Double
+  , camFieldOfView     :: Double
+  , camUpwardVector    :: Vector
+  , camDefocusAngle    :: Double
+  , camBackgroundColor :: Color
   }
   deriving (Show, Generic, Eq)
 
@@ -146,33 +117,16 @@ instance FromJSON Camera where
 
 -- | Represents a world scene
 data Scene = Scene
-  { width     :: Int -- ^ The width of rendered image
-  , height    :: Int -- ^ The height of rendered image
-  , samples   :: Double -- ^ Number of samples per pixel
-  , maxBounce :: Int
-  , camera    :: Camera -- ^ Configuration of camera
-  , textures  :: [(String, FilePath)]
-  , world     :: [WorldObject]
+  { width           :: Int
+  , height          :: Int
+  , samplesPerPixel :: Double
+  , maximumBounces  :: Int
+  , camera          :: Camera
+  , textures        :: Maybe [(String, FilePath)]
+  , world           :: [WorldObject]
   }
   deriving (Show, Generic, Eq)
 
 instance FromJSON Scene where
   parseJSON :: Value -> Parser Scene
-  parseJSON (Object v) =
-    Scene
-      <$> v
-      .:  "width"
-      <*> v
-      .:  "height"
-      <*> v
-      .:  "samples-per-pixel"
-      <*> v
-      .:  "maximum-bounces"
-      <*> v
-      .:  "camera"
-      <*> v
-      .:? "texture-files"
-      .!= []
-      <*> v
-      .:  "world"
-  parseJSON _ = error "Can not parse Scene from YAML"
+  parseJSON = worldParse 0

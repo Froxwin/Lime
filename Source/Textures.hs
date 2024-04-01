@@ -2,14 +2,11 @@
 
 module Textures where
 
-import           Color                          ( Color )
-import           Data.Aeson.Types               ( FromJSON(parseJSON)
-                                                , Parser
-                                                , Value
-                                                )
-import           GHC.Generics                   ( Generic )
-import           Utils                          ( worldParse )
-import           Vector                         ( Vector(Vector) )
+import Color            (Color)
+import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
+import GHC.Generics     (Generic)
+import Utils            (worldParse)
+import Vector           (Vector (Vector))
 
 type Texture = TextureCoords -> Vector -> Color
 type TextureCoords = (Double, Double)
@@ -18,15 +15,15 @@ class TTexture a where
   texture :: a -> Texture
 
 data WorldTexture
-    = SolidColor
-        { texColor :: Color
-        }
-    | Checkered
-        { texScale  :: Double
-        , texColor1 :: Color
-        , texColor2 :: Color
-        }
-    deriving ( Show, Generic, Eq )
+  = SolidColor
+      { texColor :: Color
+      }
+  | Checkered
+      { texScale  :: Double,
+        texColor1 :: Color,
+        texColor2 :: Color
+      }
+  deriving (Show, Generic, Eq)
 
 instance FromJSON WorldTexture where
   parseJSON :: Value -> Parser WorldTexture

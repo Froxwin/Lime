@@ -1,7 +1,9 @@
 #!/usr/bin/env pwsh
 
 Write-Output "pre-commit: Running brittany..."
-Get-ChildItem .\Source -Filter *.hs | ForEach-Object { brittany $_ --write-mode=inplace }
+Get-ChildItem .\Source | ForEach-Object { brittany $_ --write-mode=inplace ; stylish-haskell $_ -i }
+Get-ChildItem .\Test | ForEach-Object { brittany $_ --write-mode=inplace ; stylish-haskell $_ -i }
+Get-ChildItem .\App | ForEach-Object { brittany $_ --write-mode=inplace ; stylish-haskell $_ -i }
 
 Write-Output "pre-commit: Running hlint..."
 $nHints = (hlint .\Source\) | rg "hint*"

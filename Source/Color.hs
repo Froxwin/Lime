@@ -1,12 +1,10 @@
 module Color where
 
-import           Data.Yaml                      ( FromJSON(parseJSON)
-                                                , Parser
-                                                , Value
-                                                )
-import           GHC.Generics                   ( Generic )
+import Data.Yaml    (FromJSON (parseJSON), Parser, Value)
+import GHC.Generics (Generic)
 
--- | Represents a rgb color type with fields representing respective color channels
+-- | Represents a rgb color type with fields representing respective color
+--   channels
 data Color = Color
   { red   :: Double
   , green :: Double
@@ -14,7 +12,8 @@ data Color = Color
   }
   deriving (Eq, Generic)
 
--- | Converts a color to string while also converting the color channels to 8bit rgb
+-- | Converts a color to string while also converting the color channels to 8bit
+--   rgb
 instance Show Color where
   show :: Color -> String
   show (Color r g b) = show $ map (round . (* 255)) [r, g, b]

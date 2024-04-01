@@ -1,51 +1,39 @@
 {-# OPTIONS_GHC -Wno-partial-fields #-}
-{-# LANGUAGE DataKinds #-}
 
 module Materials where
 
-import           Color                          ( Color(Color) )
-import           Data.Aeson.Types               ( FromJSON(parseJSON)
-                                                , Parser
-                                                , Value
-                                                )
-import           GHC.Generics                   ( Generic )
-import           Ray                            ( Ray(Ray, rayDirection) )
-import           Textures                       ( TTexture(texture)
-                                                , TextureCoords
-                                                , WorldTexture(SolidColor)
-                                                )
-import           Utils                          ( worldParse )
-import           Vector                         ( Vector
-                                                , dot
-                                                , normalize
-                                                , reflect
-                                                , refract
-                                                , vadd
-                                                , vmul
-                                                , vneg
-                                                )
+import Color            (Color (Color))
+import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
+import GHC.Generics     (Generic)
+import Ray              (Ray (Ray, rayDirection))
+import Textures         (TTexture (texture), TextureCoords,
+                         WorldTexture (SolidColor))
+import Utils            (worldParse)
+import Vector           (Vector, dot, normalize, reflect, refract, vadd, vmul,
+                         vneg)
 
+-- | @Material :: Texture Coordinates -> Incident Ray -> Surface Normal -> Intersection Point -> Sample Vector -> (Pixel Color, Maybe Reflected Ray)@
 type Material
   = TextureCoords -> Ray -> Vector -> Vector -> Vector -> (Color, Maybe Ray)
 
 class TMaterial a where
-    material :: a -> Material
+  material :: a -> Material
 
 data WorldMaterial
-    = Lambertian
-        { matTexture :: WorldTexture
-        }
-    | Metal
-        { matFuzz    :: Double
-        , matTexture :: WorldTexture
-        }
-    | Dielectric
-        { matIor :: Double
-        }
-    | Emissive
-        { matEmissionColor :: Color
-        }
-    deriving ( Show, Generic, Eq )
+  = Lambertian
+      { matTexture :: WorldTexture
+      }
+  | Metal
+      { matFuzz    :: Double,
+        matTexture :: WorldTexture
+      }
+  | Dielectric
+      { matIor :: Double
+      }
+  | Emissive
+      { matEmissionColor :: Color
+      }
+  deriving (Show, Generic, Eq)
 
 instance FromJSON WorldMaterial where
   parseJSON :: Value -> Parser WorldMaterial

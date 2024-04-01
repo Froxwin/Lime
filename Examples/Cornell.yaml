@@ -1,6 +1,6 @@
 height: 255
 width: 400
-samples-per-pixel: 100
+samples-per-pixel: 200
 maximum-bounces: 50
 camera:
   position: [0, 0, -2.5]
@@ -11,55 +11,53 @@ camera:
   defocus-angle: 0.05
   background-color: [255, 255, 255]
 world:
-  - tag: Quad
+  - tag: quad
     corner: [0.5, 2, 0]
     quad-u: [-1, 0, 0]
     quad-v: [0, 0, 1]
     material:
-      tag: Emissive
+      tag: emissive
       emission-color: [255, 255, 255]
-  - tag: Quad
+  - tag: quad
     corner: [3, 3, 0]
     quad-v: [-6, 0, 0]
     quad-u: [0, 0, 6]
     material:
-      tag: Lambertian
-      texture:
-        tag: SolidColor
-        color: [255, 255, 255]
-  - tag: Quad
+      tag: emissive
+      emission-color: [255, 255, 255]
+  - tag: quad
     corner: [3, -3, 0]
     quad-u: [-6, 0, 0]
     quad-v: [0, 0, 6]
     material:
-      tag: Lambertian
+      tag: lambertian
       texture:
-        tag: SolidColor
+        tag: solid-color
         color: [255, 255, 255]
-  - tag: Quad
+  - tag: quad
     corner: [3, -3, 0]
     quad-v: [0, 6, 0]
     quad-u: [0, 0, 6]
     material:
-      tag: Lambertian
+      tag: lambertian
       texture:
-        tag: SolidColor
+        tag: solid-color
         color: [0, 255, 0]
-  - tag: Quad
+  - tag: quad
     corner: [-3, -3, 0]
-    quadU: [0, 6, 0]
-    quadV: [0, 0, 6]
+    quad-u: [0, 6, 0]
+    quad-v: [0, 0, 6]
     material:
-      tag: Lambertian
+      tag: lambertian
       texture:
-        tag: SolidColor
+        tag: solid-color
         color: [255, 0, 0]
-  - tag: Quad
+  - tag: quad
     corner: [-3, -3, 0]
     quad-u: [6, 0, 0]
     quad-v: [0, 6, 0]
     material:
-      tag: Lambertian
+      tag: lambertian
       texture:
-        tag: SolidColor
+        tag: solid-color
         color: [255, 255, 255]

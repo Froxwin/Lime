@@ -2,17 +2,17 @@
 
 module Main where
 
-import           Camera
-import           Color
-import           Data.ByteString.Internal
-import           Data.Yaml
-import           Engine
-import           Materials
-import           Primitives
-import           Test.Tasty
-import           Test.Tasty.HUnit
-import           Textures
-import           Vector
+import Camera
+import Color
+import Data.ByteString.Internal
+import Data.Yaml
+import Engine
+import Materials
+import Primitives
+import Test.Tasty
+import Test.Tasty.HUnit
+import Textures
+import Vector
 
 main :: IO ()
 main = defaultMain unitTests
@@ -132,7 +132,6 @@ parserTests = testGroup
   "Parser Tests"
   [ testCase "Config Parsed" $ assertEqual
       "Checks if the yaml parser is working"
-      (either (error . prettyPrintParseException) id (decodeEither' mockYAML)
-      )
+      (either (error . prettyPrintParseException) id (decodeEither' mockYAML))
       mockScene
   ]

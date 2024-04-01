@@ -1,10 +1,7 @@
 module Vector where
 
-import           Data.Yaml                      ( FromJSON(parseJSON)
-                                                , Parser
-                                                , Value
-                                                )
-import           GHC.Generics                   ( Generic )
+import Data.Yaml    (FromJSON (parseJSON), Parser, Value)
+import GHC.Generics (Generic)
 
 data Vector = Vector
   { vx :: Double
@@ -31,9 +28,9 @@ cross (Vector x y z) (Vector x' y' z') =
 vneg :: Vector -> Vector
 vneg (Vector x y z) = Vector (-x) (-y) (-z)
 
-magnitude, magnitudeSq :: Vector -> Double
-magnitudeSq v = v `dot` v
-magnitude = sqrt . magnitudeSq
+magnitude, magnitudeSquare :: Vector -> Double
+magnitudeSquare v = v `dot` v
+magnitude = sqrt . magnitudeSquare
 
 normalize :: Vector -> Vector
 normalize v = magnitude v `vdiv` v
@@ -53,12 +50,12 @@ refract v n mu = rperp `vadd` rpara
  where
   cosine = vneg v `dot` n
   rperp  = mu `vmul` (v `vadd` (cosine `vmul` n))
-  rpara  = (-sqrt (abs (1 - magnitudeSq v))) `vmul` n
+  rpara  = (-sqrt (abs (1 - magnitudeSquare v))) `vmul` n
 
 -- | Compare vectors with respect to their magnitudes
 instance Ord Vector where
   (<=) :: Vector -> Vector -> Bool
-  a <= b = magnitudeSq a <= magnitudeSq b
+  a <= b = magnitudeSquare a <= magnitudeSquare b
 
 instance Show Vector where
   show :: Vector -> String

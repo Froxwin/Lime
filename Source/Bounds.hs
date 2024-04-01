@@ -2,20 +2,21 @@
 
 module Bounds where
 
-import           Ray
-import           Vector
+import Ray    (Ray (Ray))
+import Vector (Vector (vx, vy, vz))
 
 class Box a where
-    xbx :: a -> ( Double, Double )
-    ybx :: a -> ( Double, Double )
-    zbx :: a -> ( Double, Double )
+  xbx :: a -> (Double, Double)
+  ybx :: a -> (Double, Double)
+  zbx :: a -> (Double, Double)
 
-data AABB = AABB { a :: Vector, b :: Vector }
-          | AABBq { xs :: (Double, Double), ys :: (Double, Double), zs :: (Double, Double) }
-          | AABBbox { box0 :: AABB, box1 :: AABB }
-          deriving (Show)
+data AABB
+  = AABB {a :: Vector, b :: Vector}
+  | AABBq {xs :: (Double, Double), ys :: (Double, Double), zs :: (Double, Double)}
+  | AABBbox {box0 :: AABB, box1 :: AABB}
+  deriving (Show)
 
-pad :: Box p => p -> AABB
+pad :: (Box p) => p -> AABB
 pad aabb = AABBq nxbx nybx nzbx
  where
   delta      = 0.01
@@ -40,7 +41,7 @@ instance Box AABB where
   zbx (AABBbox b0 b1) = (fst $ zbx b0, snd $ zbx b1)
   zbx (AABBq _ _ z  ) = z
 
-hit :: Box p => p -> Ray -> (Double, Double) -> [Maybe (Double, Double)]
+hit :: (Box p) => p -> Ray -> (Double, Double) -> [Maybe (Double, Double)]
 hit aabb (Ray o d) (mi, ma) = map
   (\i ->
     let invD = 1 / comp i d

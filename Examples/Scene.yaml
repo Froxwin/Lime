@@ -11,47 +11,47 @@ camera:
   defocus-angle: 0.05
   background-color: [0, 0, 0]
 world:
-  - tag: Sphere
+  - tag: sphere
     center: [0, -100.5, 0]
     radius: 100
     material:
-      tag: Metal
+      tag: metal
       fuzz: 0.3
       texture:
-        tag: SolidColor
+        tag: solid-color
         color: [168, 189, 6]
-  - tag: Sphere
+  - tag: sphere
     center: [0, 102, 0]
     radius: 100
     material:
-      tag: Emissive
+      tag: emissive
       emission-color: [255, 255, 255]
-  - tag: Sphere
+  - tag: sphere
     center: [0, 0.8, 0]
     radius: 1
     material:
-      tag: Metal
+      tag: metal
       fuzz: 0.1
       texture:
-        tag: SolidColor
+        tag: solid-color
         color: [205, 78, 38]
-  - tag: Sphere
+  - tag: sphere
     center: [-2.5, 0.5, 0]
     radius: 1
     material:
-      tag: Lambertian
+      tag: lambertian
       texture:
-        tag: Checkered
+        tag: checkered
         scale: 1
         color1: [255, 0, 0]
         color2: [0, 0, 255]
-  - tag: Sphere
+  - tag: sphere
     center: [1, 0.5, 2]
     radius: 1
     material:
-      tag: Lambertian
+      tag: lambertian
       texture:
-        tag: Checkered
+        tag: checkered
         scale: 1
         color1: [0, 255, 0]
         color2: [0, 0, 255]
