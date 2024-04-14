@@ -5,37 +5,47 @@ import GHC.Generics (Generic)
 
 -- | Represents a rgb color type with fields representing respective color
 --   channels
-data Color = Color
-  { red   :: Double
-  , green :: Double
-  , blue  :: Double
-  }
+data Color a = Color a a a
   deriving (Eq, Generic)
 
--- | Converts a color to string while also converting the color channels to 8bit
---   rgb
-instance Show Color where
-  show :: Color -> String
+instance Functor Color where
+  fmap :: (a -> b) -> Color a -> Color b
+  fmap f (Color r g b) = Color (f r) (f g) (f b)
+
+instance Applicative Color where
+  pure :: a -> Color a
+  pure x = Color x x x
+  (<*>) :: Color (a -> b) -> Color a -> Color b
+  (<*>) (Color fr fg fb) (Color r g b) = Color (fr r) (fg g) (fb b)
+
+instance RealFrac a => Show (Color a) where
+  show :: Color a -> String
   show (Color r g b) = show $ map (round . (* 255)) [r, g, b]
 
-instance FromJSON Color where
-  parseJSON :: Value -> Parser Color
+instance (FromJSON a, Fractional a) => FromJSON (Color a) where
+  parseJSON :: Value -> Parser (Color a)
   parseJSON v = do
     [x, y, z] <- parseJSON v
-    return $ Color (x / 255) (y / 255) (z / 255)
+    return $ (/ 255) <$> Color x y z
+
+colorDouble2Word :: (RealFrac a, Integral b) => Color a -> Color b
+colorDouble2Word color = round . (* 255) <$> color
+
+colorWord2Double :: (Fractional b, Integral a) => Color a -> Color b
+colorWord2Double color = (/ 255) . fromIntegral <$> color
 
 -- | Convert color from linear space to gamma space with γ = 1/2
-correctGamma :: Color -> Color
-correctGamma (Color r g b) = Color (sqrt r) (sqrt g) (sqrt b)
+correctGamma :: Floating a => Color a -> Color a
+correctGamma color = sqrt <$> color
 
 -- | Adds two colors by adding their respective rgb components
-addColor :: Color -> Color -> Color
-addColor (Color r g b) (Color r' g' b') = Color (r + r') (g + g') (b + b')
+addColor :: Num a => Color a -> Color a -> Color a
+addColor color color' = (+) <$> color <*> color'
 
 -- | Scales a color by scaling all its color channels
-scaleColor :: Double -> Color -> Color
-scaleColor t (Color r g b) = Color (t * r) (t * g) (t * b)
+scaleColor :: Num a => a -> Color a -> Color a
+scaleColor t color = (* t) <$> color
 
 -- | Scales a color by multiplying its color channels with the given color
-scaleColor' :: Color -> Color -> Color
-scaleColor' (Color r g b) (Color r' g' b') = Color (r * r') (g * g') (b * b')
+scaleColor' :: Num a => Color a -> Color a -> Color a
+scaleColor' color color' = (*) <$> color <*> color'

@@ -19,5 +19,5 @@ steps:
       remove_redundant: true
       language_prefix: LANGUAGE
 columns: 80
-newline: native
+newline: lf
 cabal: true

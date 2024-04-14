@@ -2,33 +2,17 @@
 
 module Engine where
 
-import Camera        (Camera (camBackgroundColor), Scene (..), render)
-import Codec.Picture (DynamicImage, PixelRGB8 (PixelRGB8), generateImage,
-                      readImage, writePng)
-import Color         (Color (Color))
-import Data.Yaml     (decodeFileEither, prettyPrintParseException)
-import Materials     (WorldMaterial (Emissive, Lambertian))
-import Primitives    (WorldObject (primMaterial))
-import Textures      (WorldTexture (SolidColor))
+import Codec.Picture   (PixelRGB8 (PixelRGB8), generateImage, readImage,
+                        writePng)
+import Codec.Wavefront (fromFile)
+import Data.Yaml       (decodeFileEither, prettyPrintParseException)
 
-group :: Int -> [a] -> [[a]]
-group _ [] = []
-group n xs = take n xs : group n (drop n xs)
-
-loadTextures :: Scene -> IO [(String, DynamicImage)]
-loadTextures =
-  maybe
-      (return [])
-      (mapM
-        (\(k, v) -> do
-          a <- either error id <$> readImage v
-          return (k, a)
-        )
-      )
-    . textures
-
-getPix :: [Color] -> Int -> Int -> Int -> Color
-getPix img w x y = img !! ((w * y) + x)
+import Camera          (Camera (camBackgroundColor), Scene (..), render)
+import Color           (Color (..))
+import Materials       (WorldMaterial (Emissive, Lambertian))
+import Primitives      (WorldObject (primMaterial))
+import Textures        (WorldTexture (SolidColor))
+import Utils           (group, load)
 
 convertToPreview :: Scene -> Scene
 convertToPreview scene = scene
@@ -51,14 +35,14 @@ ignite input output preview = do
     (\x -> if preview then convertToPreview x else x)
     .   either (error . prettyPrintParseException) id
     <$> decodeFileEither input
-  !texs <- loadTextures scene
-  let !pixelData = group (width scene) $ render scene texs
+  !texs <- load readImage "Texture" (textures scene)
+  !objs <- load fromFile "Object" (objects scene)
+  let !pixelData = group (width scene) $ render scene objs texs
   writePng output $ generateImage
     (\x y ->
-      let (Color r g b) = ((pixelData !! y) !! x)
-      in  PixelRGB8 (fromIntegral $ round $ r * 255)
-                    (fromIntegral $ round $ g * 255)
-                    (fromIntegral $ round $ b * 255)
+      let (Color r g b) =
+            fromIntegral . round . (* 255) <$> ((pixelData !! y) !! x)
+      in  PixelRGB8 r g b
     )
     (width scene)
     (height scene)

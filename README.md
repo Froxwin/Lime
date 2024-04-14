@@ -57,10 +57,18 @@ Run `cabal haddock` in the project directory to build the documentation
 
 ## Example Renders
 
+To render all examples run teh following command
+
+```ps1
+$ ls .\Examples\ -Filter *.yaml | % -Parallel { cabal run exe:Lime -- -i $_ -o $($_.BaseName).png }
+```
+
 <div align="center">
 
 ![Scene](Examples/Scene.png) ![Glass](Examples/Glass.png)
 
 ![Moon](Examples/Moon.png) ![Balls](Examples/Balls.png)
+
+![Saturn](Examples/Saturn.png) ![Cube](Examples/Cube.png)
 
 </div>

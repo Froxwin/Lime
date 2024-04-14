@@ -5,16 +5,21 @@
 - [x] Primitives
   + [x] Spheres
   + [x] Quadrilaterals
+  + [x] Discs
+  + [x] Rings
+  + [x] Triangles
 - [x] Materials
   + [x] Diffuse Materials
   + [x] Reflective Materials
   + [x] Dielectric Materials
   + [x] Emissive Materials
+  + [ ] Perlin Noise
 - [ ] Textures
   + [x] Solid Textures
   + [x] Checkered Textures
   + [ ] Image Textures
-- [ ] Object file parsing
+- [x] Object file parsing
+- [x] Triangle mesh rendering
 
 ## Camera
 
@@ -23,6 +28,8 @@
 - [x] Defocus Blurring
 - [ ] Motion Blur
 - [ ] Lens Flare
+- [ ] Instances
+- [ ] Volumes
 
 ## Performance
 

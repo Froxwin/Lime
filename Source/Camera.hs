@@ -1,24 +1,22 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Camera where
 
-import Bounds        (AABB (AABB, AABBbox))
-import Codec.Picture (DynamicImage)
-import Color         (Color (Color), addColor, correctGamma, scaleColor,
-                      scaleColor')
-import Data.List     (sortBy)
-import Data.Maybe    (fromJust, isJust, mapMaybe)
-import Data.Yaml     (FromJSON (parseJSON), Parser, Value)
-import GHC.Generics  (Generic)
-import Primitives    (Primitive, TWorldObject (boundingBox, primitive),
-                      WorldObject)
-import Ray           (Ray (..))
-import Utils         (worldParse)
-import Vector        (Vector (Vector), cross, dot, normalize, vadd, vdiv, vmul,
-                      vneg, vsub)
+import Codec.Picture   (DynamicImage)
+import Codec.Wavefront (WavefrontOBJ)
+import Data.List       (sortBy)
+import Data.Map        (Map)
+import Data.Maybe      (fromJust, isJust, mapMaybe)
+import Data.Yaml       (FromJSON (parseJSON), Parser, Value)
+import GHC.Generics    (Generic)
 
--- | The 'rayColor' function computes the color of a ray.
-rayColor :: Ray -> [Primitive] -> Vector -> Int -> Color -> Color
+import Color           (Color (..), addColor, correctGamma, scaleColor,
+                        scaleColor')
+import Primitives      (Primitive, TWorldObject (primitive), WorldObject)
+import Ray             (Ray (Ray, rayOrigin))
+import Utils           (worldParse)
+import Vector          (Vec3 (Vec3), cross, dot, normalize, vadd, vdiv, vmul,
+                        vneg, vsub)
+
+rayColor :: Ray -> [Primitive] -> Vec3 -> Int -> Color Double -> Color Double
 rayColor r ls sampleRay depth background
   | depth == 0 = Color 0 0 0
   | not (null hs) = if isJust w
@@ -45,16 +43,20 @@ rayColor r ls sampleRay depth background
 --  The generation is done __left-to-right__ and __top-to-bottom__.
 --
 --  The function employs grid supersampling with sample size 'samplesPerPixel'.
-render :: Scene -> [(String, DynamicImage)] -> [Color]
-render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da bg) _ wrld) _wq
+render
+  :: Scene
+  -> Map String WavefrontOBJ
+  -> Map String DynamicImage
+  -> [Color Double]
+render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da bg) _ _ wrld) objss _wq
   = [ correctGamma $ foldl
         addColor
         (Color 0 0 0)
         [ (1 / (fromIntegral (length sampleSquare) ^ 3))
             `scaleColor` rayColor
                            (Ray diskSample (pixelSample `vsub` diskSample))
-                           (map primitive wrld)
-                           (Vector sx sy sz)
+                           (concatMap (primitive objss) wrld)
+                           (Vec3 sx sy sz)
                            m
                            bg
         | sx <- sampleSquare
@@ -71,8 +73,6 @@ render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da bg)
     , ui <- scanline $ fromIntegral imgWidth
     ]
  where
-  _wbox =
-    foldl AABBbox (AABB (Vector 0 0 0) (Vector 0 0 0)) (map boundingBox wrld)
   scanline q = map (/ q) [0 .. q - 1]
   sampleSquare =
     [-1, (-1 + (1 / ((((nsamples ** (1 / 3)) - 3) / 2) + 1))) .. 1]
@@ -101,13 +101,13 @@ render (Scene imgWidth imgHeight nsamples m (Camera origin lookAt fl f up da bg)
 
 -- | Represents camera configuration
 data Camera = Camera
-  { camPosition        :: Vector
-  , camLookingAt       :: Vector
+  { camPosition        :: Vec3
+  , camLookingAt       :: Vec3
   , camFocalLength     :: Double
   , camFieldOfView     :: Double
-  , camUpwardVector    :: Vector
+  , camUpwardVector    :: Vec3
   , camDefocusAngle    :: Double
-  , camBackgroundColor :: Color
+  , camBackgroundColor :: Color Double
   }
   deriving (Show, Generic, Eq)
 
@@ -123,6 +123,7 @@ data Scene = Scene
   , maximumBounces  :: Int
   , camera          :: Camera
   , textures        :: Maybe [(String, FilePath)]
+  , objects         :: Maybe [(String, FilePath)]
   , world           :: [WorldObject]
   }
   deriving (Show, Generic, Eq)

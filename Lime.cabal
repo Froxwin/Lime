@@ -25,11 +25,14 @@ common depends
     , aeson
     , base
     , bytestring
+    , containers
     , directory
     , JuicyPixels
     , parallel
     , process
     , text
+    , vector
+    , wavefront
     , yaml
 
   default-language: Haskell2010
@@ -51,7 +54,6 @@ library
   import:          depends, flags
   hs-source-dirs:  Source
   exposed-modules:
-    Bounds
     Camera
     Color
     Engine

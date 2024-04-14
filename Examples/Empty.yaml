@@ -2,6 +2,7 @@ height: 255
 width: 400
 samples-per-pixel: 100
 maximum-bounces: 50
+textures: []
 camera:
   position: [0, 0.8, -2.5]
   looking-at: [0, 1, 0]
@@ -34,11 +35,15 @@ world:
     quad-v: [0, 1, 0]
     material:
       tag: emissive
-      emission-color: [188, 255, 164]
+      texture:
+        tag: solid-color
+        color: [188, 255, 164]
   - tag: quad
     corner: [-1.5, 0, -1]
     quad-u: [0, 0, 1]
     quad-v: [0, 1, 0]
     material:
       tag: emissive
-      emission-color: [188, 255, 164]
+      texture:
+        tag: solid-color
+        color: [188, 255, 164]

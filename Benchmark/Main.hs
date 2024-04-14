@@ -40,9 +40,9 @@ main = do
     , height    = 270
     , maxBounce = 10
     , textures  = []
-    , camera    = Camera { upVector     = Vector 0 1 0
-                         , lookingAt    = Vector 0 1 0
-                         , position     = Vector 0 1.2 (-1.3)
+    , camera    = Camera { upVector     = Vec3 0 1 0
+                         , lookingAt    = Vec3 0 1 0
+                         , position     = Vec3 0 1.2 (-1.3)
                          , fov          = 1.57
                          , focalLength  = 1
                          , defocusAngle = 0.08
@@ -55,7 +55,7 @@ main = do
                         , material = Lambertian $ SolidColor $ Color 255 0 0
                         }
                       )
-                    . (\[x, y, z] -> Vector x y z)
+                    . (\[x, y, z] -> Vec3 x y z)
                     )
                     (group 3 rs)
     }
