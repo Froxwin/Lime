@@ -1,51 +1,64 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE NoFieldSelectors #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
 module Textures where
 
-import           Color                          ( Color )
-import           Data.Yaml                      ( FromJSON )
-import           GHC.Generics                   ( Generic )
-import           Vector                         ( Vector(Vector) )
+import Codec.Picture    (Image (imageHeight, imageWidth), Pixel (pixelAt),
+                         PixelRGBF (..))
+import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
+import Data.Map         (Map, (!?))
+import Data.Maybe       (fromMaybe)
+import GHC.Generics     (Generic)
+
+import Color            (Color (..))
+import Utils            (prettyError, worldParse)
+import Vector           (Vec3 (Vec3))
+
+type Texture = TextureCoords -> Vec3 -> Color Double
 
 type TextureCoords = (Double, Double)
 
-type Texture = TextureCoords -> Vector -> Color
-
-class TTexture a where
-  ttexture :: a -> Texture
-
-data WorldTexture =
-    SolidColor { color :: Color }
-  | Checkered  { scale :: Double, color1 :: Color, color2 :: Color }
+data WorldTexture
+  = SolidColor
+      { color :: Color Double
+      }
+  | Checkered
+      { scale :: Double
+      , color1 :: Color Double
+      , color2 :: Color Double
+      }
+  | ImageTexture
+      { image :: String
+      }
   deriving (Show, Generic, Eq)
 
-instance FromJSON WorldTexture
+instance FromJSON WorldTexture where
+  parseJSON :: Value -> Parser WorldTexture
+  parseJSON = worldParse
 
-instance TTexture WorldTexture where
-  ttexture :: WorldTexture -> Texture
-  ttexture (SolidColor c     ) _      _                   = c
-
-  ttexture (Checkered k c1 c2) (u, v) p@(Vector px py pz) = if isEven
-    then ttexture (SolidColor c1) (u, v) p
-    else ttexture (SolidColor c2) (u, v) p
-   where
-    xInt   = floor (1 / k * px)
-    yInt   = floor (1 / k * py)
-    zInt   = floor (1 / k * pz)
-    isEven = even (xInt + yInt + zInt)
-
--- FIXME image textures are too slow to be usable
--- imageTexture :: DynamicImage -> Texture
--- imageTexture img (u, v) p = pixel
---  where
---   img8 = convertRGB8 img
---   i    = u * fromIntegral (imageWidth img8)
---   j    = v * fromIntegral (imageHeight img8)
---   pixel =
---     (\(PixelRGB8 r g b) -> Color
---         ((fromIntegral (toInteger r) :: Double) / 255)
---         ((fromIntegral (toInteger g) :: Double) / 255)
---         ((fromIntegral (toInteger b) :: Double) / 255)
---       )
---       (pixelAt img8 (round i) (round j))
+texture :: Map String (Image PixelRGBF) -> WorldTexture -> Texture
+-------------------------------------------------------------------------------
+-- Solid Texture
+-------------------------------------------------------------------------------
+texture _ (SolidColor color) _ _ = color
+-------------------------------------------------------------------------------
+-- Checkered Texture
+-------------------------------------------------------------------------------
+texture ts (Checkered k c1 c2) coords p
+  | isEven p = texture ts (SolidColor c1) coords p
+  | otherwise = texture ts (SolidColor c2) coords p
+ where
+  qInt q = floor (1 / k * q)
+  isEven (Vec3 px py pz) = even (qInt px + qInt py + qInt pz)
+-------------------------------------------------------------------------------
+-- Image Texture
+-------------------------------------------------------------------------------
+texture ts (ImageTexture key) (u, v) _ = pixel
+ where
+  img =
+    fromMaybe (prettyError $ "Texture `" ++ key ++ "` not defined") $ ts !? key
+  i = floor (u * fromIntegral (imageWidth img)) :: Int
+  j = floor ((1 - v) * fromIntegral (imageHeight img)) :: Int
+  pixel =
+    (\(PixelRGBF r g b) -> realToFrac <$> Color r g b) (pixelAt img i j)
+      :: Color Double

@@ -1,43 +1,54 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module Color where
 
-import           Data.Yaml                      ( FromJSON(parseJSON)
-                                                , Parser
-                                                , Value
-                                                )
-import           GHC.Generics                   ( Generic )
+import Control.DeepSeq  (NFData)
+import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
+import GHC.Generics     (Generic)
 
--- | Represents a rgb color type
-data Color = Color
-  { red   :: Double -- ^ The red component of a color
-  , green :: Double -- ^ The green component of a color
-  , blue  :: Double -- ^ The blue component of a color
-  }
+-- | Represents a rgb color type with fields representing respective color
+--  channels
+data Color a = Color a a a
   deriving (Eq, Generic)
 
-instance Show Color where
-  show :: Color -> String
-  show (Color r g b) = concat $ (flip $ zipWith (++)) [" ", " ", ""] $ map
-    (show . round . (* 255))
-    [r, g, b]
+instance Functor Color where
+  fmap :: (a -> b) -> Color a -> Color b
+  fmap f (Color r g b) = Color (f r) (f g) (f b)
 
-instance FromJSON Color where
-  parseJSON :: Value -> Parser Color
+instance Applicative Color where
+  pure :: a -> Color a
+  pure x = Color x x x
+  (<*>) :: Color (a -> b) -> Color a -> Color b
+  (<*>) (Color fr fg fb) (Color r g b) = Color (fr r) (fg g) (fb b)
+
+instance RealFrac a => Show (Color a) where
+  show :: Color a -> String
+  show (Color r g b) = show $ map (round . (* 255)) [r, g, b]
+
+instance (FromJSON a, Fractional a) => FromJSON (Color a) where
+  parseJSON :: Value -> Parser (Color a)
   parseJSON v = do
     [x, y, z] <- parseJSON v
-    return $ Color (x / 255) (y / 255) (z / 255)
+    return $ (/ 255) <$> Color x y z
 
-correctGamma :: Color -> Color
-correctGamma (Color r g b) = Color (sqrt r) (sqrt g) (sqrt b)
+instance NFData a => NFData (Color a)
+
+colorDouble2Word :: (RealFrac a, Integral b) => Color a -> Color b
+colorDouble2Word color = round . (* 255) <$> color
+
+colorWord2Double :: (Fractional b, Integral a) => Color a -> Color b
+colorWord2Double color = (/ 255) . fromIntegral <$> color
+
+-- | Convert color from linear space to gamma space with γ = 1/2
+correctGamma :: Floating a => Color a -> Color a
+correctGamma color = sqrt <$> color
 
 -- | Adds two colors by adding their respective rgb components
-addColor :: Color -> Color -> Color
-addColor (Color r g b) (Color r' g' b') = Color (r + r') (g + g') (b + b')
+addColor :: Num a => Color a -> Color a -> Color a
+addColor color color' = (+) <$> color <*> color'
 
 -- | Scales a color by scaling all its color channels
-scaleColor :: Double -> Color -> Color
-scaleColor t (Color r g b) = Color (t * r) (t * g) (t * b)
+scaleColor :: Num a => a -> Color a -> Color a
+scaleColor t color = (* t) <$> color
 
-scaleColor' :: Color -> Color -> Color
-scaleColor' (Color r g b) (Color r' g' b') = Color (r * r') (g * g') (b * b')
+-- | Scales a color by multiplying its color channels with the given color
+scaleColor' :: Num a => Color a -> Color a -> Color a
+scaleColor' color color' = (*) <$> color <*> color'

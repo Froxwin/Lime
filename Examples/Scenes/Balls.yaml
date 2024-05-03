@@ -1,0 +1,61 @@
+height: 255
+width: 400
+samples_per_pixel: 100
+maximum_bounces: 50
+camera:
+  position: [0.5, 0.8, -2.5]
+  looking_at: [0, 1, 0]
+  focal_length: 1
+  field_of_view: 1.57
+  upward_vector: [0, 1, 0]
+  defocus_angle: 0.05
+  background_texture:
+    tag: solid-color
+    color: [0, 0, 0]
+world:
+  - tag: sphere
+    center: [0, -100.5, 0]
+    radius: 100
+    material:
+      tag: metal
+      fuzz: 0.3
+      texture:
+        tag: solid-color
+        color: [168, 189, 6]
+  - tag: sphere
+    center: [0, 102, 0]
+    radius: 100
+    material:
+      tag: emissive
+      texture:
+        tag: solid-color
+        color: [255, 255, 255]
+  - tag: sphere
+    center: [0, 0.8, 0]
+    radius: 1
+    material:
+      tag: metal
+      fuzz: 0.1
+      texture:
+        tag: solid-color
+        color: [205, 78, 38]
+  - tag: sphere
+    center: [-2.5, 0.5, 0]
+    radius: 1
+    material:
+      tag: lambertian
+      texture:
+        tag: checkered
+        scale: 1
+        color1: [255, 0, 0]
+        color2: [0, 0, 255]
+  - tag: sphere
+    center: [1, 0.5, 2]
+    radius: 1
+    material:
+      tag: lambertian
+      texture:
+        tag: checkered
+        scale: 1
+        color1: [0, 255, 0]
+        color2: [0, 0, 255]

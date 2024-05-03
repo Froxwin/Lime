@@ -2,14 +2,24 @@
 
 ## Objects
 
-- [x] Sphere rendering
-- [x] Multiple Objects
-- [x] Diffuse Materials
-- [x] Other Materials
+- [x] Primitives
+  + [x] Spheres
+  + [x] Quadrilaterals
+  + [x] Discs
+  + [x] Rings
+  + [x] Triangles
+- [x] Materials
+  + [x] Diffuse Materials
+  + [x] Reflective Materials
+  + [x] Dielectric Materials
+  + [x] Emissive Materials
+  + [ ] Perlin Noise
 - [x] Textures
-- [x] Quadrilaterals
-- [x] Lights
-- [ ] Object file parsing
+  + [x] Solid Textures
+  + [x] Checkered Textures
+  + [x] Image Textures
+- [x] Object file parsing
+- [x] Triangle mesh rendering
 
 ## Camera
 
@@ -17,8 +27,12 @@
 - [x] Positionable Camera
 - [x] Defocus Blurring
 - [ ] Motion Blur
+- [ ] Lens Flare
+- [ ] Instances
+- [ ] Volumes
 
 ## Performance
 
-- [ ] Parallal Processing
-- [ ] Optimisation
+- [ ] Bounding Volume Hierarchies
+- [ ] Parallel Processing
+- [ ] Optimization

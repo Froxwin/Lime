@@ -1,11 +1,23 @@
 packages: Lime.cabal
 
 jobs: $ncpus
+-- shared: True
+-- executable-dynamic: True
 
 haddock-html: True
 haddock-hoogle: True
 haddock-quickjump: True
 haddock-hyperlink-source: True
 
-tests: True
+-- tests: True
 test-show-details: direct
+
+-- package *
+--   coverage: True
+--   library-coverage: True
+-- package attoparsec
+--   coverage: False
+--   library-coverage: False
+
+-- profiling: True
+-- profiling-detail: all-functions

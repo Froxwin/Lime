@@ -3,9 +3,11 @@ name:            Lime
 version:         0.1.0.0
 synopsis:        Ray Tracer
 description:
-  A simple raytracer written in haskell. See the README on GitHub at <https://github.com/Froxwin/Lime#readme>
+  A simple raytracer written in haskell
+  .
+  See the README on GitHub at <https://github.com/Froxwin/Lime#readme>
 
-homepage:        https://github.com/Froxwin/Lime#readme
+homepage:        https://github.com/Froxwin/Lime/
 bug-reports:     https://github.com/Froxwin/Lime/issues
 license:         BSD-3-Clause
 license-file:    LICENSE.md
@@ -20,28 +22,41 @@ source-repository head
   type:     git
   location: https://github.com/Froxwin/Lime
 
-common depends
+common library-depends
   build-depends:
-    , base         >=4.17.2  && <4.18
-    , directory    >=1.3.7   && <1.4
-    , JuicyPixels  >=3.3.8   && <3.4
-    , parallel     >=3.2.2   && <3.3
-    , process      >=1.6.18  && <1.7
-    , yaml         >=0.11.11 && <0.12
+    , aeson
+    , base
+    , containers
+    , deepseq
+    , JuicyPixels
+    , vector
+    , wavefront
 
+common library
   default-language: Haskell2010
-
-common flags
   ghc-options:
-    -Wall -Wno-type-defaults -threaded -Wcompat -Widentities
-    -Wincomplete-record-updates -Wincomplete-uni-patterns
-    -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+    -Weverything -Wcompat -Wno-type-defaults -Wno-safe -Wno-unsafe
+    -Wno-implicit-prelude -Wno-missing-kind-signatures
+    -Wno-missing-local-signatures -Wno-all-missed-specialisations
+    -Wno-missing-deriving-strategies -Wno-missing-export-lists
+    -Wno-missing-import-lists -Wno-prepositive-qualified-module
+    -Wno-missing-safe-haskell-mode
 
-  default-extensions: InstanceSigs
+common executable
+  import:        library
+  build-depends:
+    , base
+    , Lime
+
+  ghc-options:   -rtsopts -threaded -with-rtsopts=-N
 
 library
-  import:          depends, flags
-  hs-source-dirs:  Source
+  import:             library, library-depends
+  hs-source-dirs:     Source
+  default-extensions:
+    DeriveGeneric
+    InstanceSigs
+
   exposed-modules:
     Camera
     Color
@@ -50,24 +65,35 @@ library
     Primitives
     Ray
     Textures
+    Utils
     Vector
 
 executable Lime
-  import:         depends, flags
-  hs-source-dirs: App
+  import:         executable
+  hs-source-dirs: Lime
   main-is:        Main.hs
   build-depends:
-    , cmdargs  >=0.10.22 && <0.11
-    , Lime
-
-  ghc-options:    -rtsopts -with-rtsopts=-N
+    , containers
+    , hslua
+    , optparse-applicative
+    , yaml
 
 test-suite Alkali
-  import:         depends
+  import:         executable, library-depends
   type:           exitcode-stdio-1.0
   main-is:        Main.hs
   hs-source-dirs: Test
   build-depends:
-    , Lime
     , tasty
     , tasty-hunit
+    , yaml
+    , bytestring
+
+benchmark Halogen
+  import:         executable
+  type:           exitcode-stdio-1.0
+  main-is:        Main.hs
+  hs-source-dirs: Benchmark
+  build-depends:
+    , criterion
+    , random

@@ -1,45 +1,55 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 
-module Engine where
+module Engine
+  ( Scene
+  , ignite
+  ) where
 
-import           Camera                         ( Scene(height, textures, width)
-                                                , render
-                                                )
-import           Codec.Picture                  ( DynamicImage
-                                                , PixelRGB8(PixelRGB8)
-                                                , generateImage
-                                                , readImage
-                                                , writePng
-                                                )
-import           Color                          ( Color(Color) )
-import           Data.Yaml                      ( decodeFileEither
-                                                , prettyPrintParseException
-                                                )
+import Codec.Picture   (Pixel8, PixelRGB8 (PixelRGB8), generateImage, readImage,
+                        writePng)
+import Codec.Wavefront (fromFile)
+import Control.DeepSeq (deepseq)
+import Data.Vector     ((!))
 
-group :: Int -> [a] -> [[a]]
-group _ [] = []
-group n xs = take n xs : group n (drop n xs)
+import Camera          (Camera (backgroundTexture), Scene (..), render)
+import Color           (Color (Color), colorDouble2Word)
+import Materials       (WorldMaterial (Emissive, Lambertian))
+import Primitives      (WorldObject (material))
+import Textures        (WorldTexture (SolidColor))
+import Utils           (load, makeImage)
 
-loadTextures :: Scene -> IO [(String, DynamicImage)]
-loadTextures scene = mapM loadTexture $ textures scene
- where
-  loadTexture (k, v) = do
-    a <- either error id <$> readImage v
-    return (k, a)
+convertToPreview :: Scene -> Scene
+convertToPreview scene =
+  scene
+    { height = 255
+    , width = 400
+    , samplesPerPixel = 50
+    , maximumBounces = 2
+    , camera = scene.camera {backgroundTexture = SolidColor (Color 1 1 1)}
+    , world =
+        map
+          ( \x -> case x.material of
+              Emissive _ -> x
+              _ -> x {material = Lambertian (SolidColor (Color 0.6 0.6 0.6))}
+          )
+          scene.world
+    }
 
-ignite :: String -> String -> Bool -> IO ()
-ignite input output _preview = do
-  !scene <- either (error . prettyPrintParseException) id
-    <$> decodeFileEither input
-  !texs <- loadTextures scene
-  let !pixelData = group (width scene) $ render scene texs
-  writePng output $ generateImage
-    (\x y ->
-      let (Color r g b) = ((pixelData !! y) !! x)
-      in  PixelRGB8 (fromIntegral $ round $ r * 255)
-                    (fromIntegral $ round $ g * 255)
-                    (fromIntegral $ round $ b * 255)
-    )
-    (width scene)
-    (height scene)
-  putStrLn $ "[ \x1b[32mSaved to " ++ output ++ "\x1b[0m ]"
+ignite :: FilePath -> Bool -> FilePath -> FilePath -> Scene -> IO ()
+ignite output preview texDir modelDir rawScene = do
+  let !scene = if preview then convertToPreview rawScene else rawScene
+  !texs <- load texDir readImage "Texture" scene.textures
+  !objs <- load modelDir fromFile "Object" scene.objects
+  let pixelData = makeImage scene.width $ render scene objs texs
+  pixelData `deepseq`
+    writePng output $
+      generateImage
+        ( \x y ->
+            let Color r g b =
+                  colorDouble2Word ((pixelData ! y) ! x) :: Color Pixel8
+             in PixelRGB8 r g b
+        )
+        scene.width
+        scene.height
+  putStrLn $ "[ \ESC[1;32mSaved to " ++ output ++ "\ESC[1;0m ]"
