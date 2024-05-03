@@ -4,7 +4,7 @@ import Vector (Vec3, vadd, vmul)
 
 -- | Represents a light ray
 data Ray = Ray
-  { rayOrigin    :: Vec3
+  { rayOrigin :: Vec3
   -- ^ Point from where the ray is emanating
   , rayDirection :: Vec3
   -- ^ direction in which ray is going

@@ -14,10 +14,10 @@
   + [x] Dielectric Materials
   + [x] Emissive Materials
   + [ ] Perlin Noise
-- [ ] Textures
+- [x] Textures
   + [x] Solid Textures
   + [x] Checkered Textures
-  + [ ] Image Textures
+  + [x] Image Textures
 - [x] Object file parsing
 - [x] Triangle mesh rendering
 

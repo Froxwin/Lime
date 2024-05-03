@@ -1,7 +1,9 @@
+{-# LANGUAGE DerivingVia #-}
+
 module Vector where
 
-import Data.Yaml    (FromJSON (parseJSON), Parser, Value)
-import GHC.Generics (Generic)
+import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
+import GHC.Generics     (Generic)
 
 data Vec3 = Vec3
   { vx :: Double
@@ -49,8 +51,11 @@ refract :: Vec3 -> Vec3 -> Double -> Vec3
 refract v n mu = rperp `vadd` rpara
  where
   cosine = min (vneg (normalize v) `dot` normalize n) 1
-  rperp  = mu `vmul` (normalize v `vadd` (cosine `vmul` normalize n))
-  rpara  = (-sqrt (abs (1 - magnitudeSquare rperp))) `vmul` normalize n
+  rperp = mu `vmul` (normalize v `vadd` (cosine `vmul` normalize n))
+  rpara = (-sqrt (abs (1 - magnitudeSquare rperp))) `vmul` normalize n
+
+scalarTripleProduct :: Vec3 -> Vec3 -> Vec3 -> Double
+scalarTripleProduct a b c = a `dot` (b `cross` c)
 
 -- | Compare vectors with respect to their magnitudes
 instance Ord Vec3 where

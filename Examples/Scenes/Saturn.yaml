@@ -1,15 +1,19 @@
 height: 255
 width: 400
-samples-per-pixel: 500
-maximum-bounces: 50
+samples_per_pixel: 200
+maximum_bounces: 50
+textures:
+  - [space, space.jpg]
 camera:
   position: [0, 0.6, -2.5]
-  looking-at: [0, 0, 0]
-  focal-length: 1
-  field-of-view: 1.57
-  upward-vector: [0, 1, 0]
-  defocus-angle: 0.05
-  background-color: [0, 0, 0]
+  looking_at: [0, 0, 0]
+  focal_length: 1
+  field_of_view: 1.57
+  upward_vector: [0, 1, 0]
+  defocus_angle: 0
+  background_texture:
+    tag: image-texture
+    image: space
 world:
   - tag: sphere
     center: [15,5,-25]
@@ -29,8 +33,8 @@ world:
         color: [225, 177, 104]
   - tag: ring
     center: [0,0,0]
-    inner-radius: 1.7
-    outer-radius: 2
+    inner_radius: 1.7
+    outer_radius: 2
     normal: [0.2,1,0.15]
     material:
       tag: lambertian
@@ -39,8 +43,8 @@ world:
         color: [255, 226, 174]
   - tag: ring
     center: [0,0,0]
-    inner-radius: 1.2
-    outer-radius: 1.5
+    inner_radius: 1.2
+    outer_radius: 1.5
     normal: [0.2,1,0.15]
     material:
       tag: lambertian
@@ -49,8 +53,8 @@ world:
         color: [255, 226, 174]
   - tag: ring
     center: [0,0,0]
-    inner-radius: 2.3
-    outer-radius: 2.4
+    inner_radius: 2.3
+    outer_radius: 2.4
     normal: [0.2,1,0.15]
     material:
       tag: lambertian

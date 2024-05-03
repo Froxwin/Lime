@@ -1,10 +1,11 @@
 module Color where
 
-import Data.Yaml    (FromJSON (parseJSON), Parser, Value)
-import GHC.Generics (Generic)
+import Control.DeepSeq  (NFData)
+import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
+import GHC.Generics     (Generic)
 
 -- | Represents a rgb color type with fields representing respective color
---   channels
+--  channels
 data Color a = Color a a a
   deriving (Eq, Generic)
 
@@ -27,6 +28,8 @@ instance (FromJSON a, Fractional a) => FromJSON (Color a) where
   parseJSON v = do
     [x, y, z] <- parseJSON v
     return $ (/ 255) <$> Color x y z
+
+instance NFData a => NFData (Color a)
 
 colorDouble2Word :: (RealFrac a, Integral b) => Color a -> Color b
 colorDouble2Word color = round . (* 255) <$> color

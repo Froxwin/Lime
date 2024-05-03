@@ -1,8 +1,11 @@
+{-# LANGUAGE NoFieldSelectors #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
 module Materials where
 
+import Codec.Picture    (Image, PixelRGBF)
 import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
+import Data.Map         (Map)
 import GHC.Generics     (Generic)
 
 import Color            (Color (..))
@@ -12,53 +15,60 @@ import Utils            (worldParse)
 import Vector           (Vec3, dot, normalize, reflect, refract, vadd, vmul)
 
 -- | @Material :: Texture Coordinates -> Incident Ray -> Surface Normal -> Intersection Point -> Sample Vector -> (Pixel Color, Maybe Reflected Ray)@
-type Material
-  = TextureCoords -> Ray -> Vec3 -> Vec3 -> Vec3 -> (Color Double, Maybe Ray)
+type Material =
+  Map String (Image PixelRGBF)
+  -> TextureCoords
+  -> Ray
+  -> Vec3
+  -> Vec3
+  -> Vec3
+  -> (Color Double, Maybe Ray)
 
 data WorldMaterial
   = Lambertian
-      { matTexture :: WorldTexture
+      { texture :: WorldTexture
       }
   | Metal
-      { matFuzz :: Double
-      , matTexture :: WorldTexture
+      { fuzz :: Double
+      , texture :: WorldTexture
       }
   | Dielectric
-      { matIor :: Double
+      { ior :: Double
       }
   | Emissive
-      { matTexture :: WorldTexture
+      { texture :: WorldTexture
       }
   deriving (Show, Generic, Eq)
 
 instance FromJSON WorldMaterial where
   parseJSON :: Value -> Parser WorldMaterial
-  parseJSON = worldParse 3
+  parseJSON = worldParse
 
 material :: WorldMaterial -> Material
 -------------------------------------------------------------------------------
 -- Lambertian Material
 -------------------------------------------------------------------------------
-material (Lambertian tex) coords _ n p rvec =
-  (texture tex coords p, Just $ Ray p (rvec `vadd` n))
+material (Lambertian tex) ts coords _ n p rvec =
+  (texture ts tex coords p, Just $ Ray p (rvec `vadd` n))
 -------------------------------------------------------------------------------
 -- Metallic Material
 -------------------------------------------------------------------------------
-material (Metal fuz tex) coords r n p rvec =
-  ( texture tex coords p
-  , Just
-    $ Ray p (reflect (normalize (rayDirection r)) n `vadd` (fuz `vmul` rvec))
+material (Metal fuz tex) ts coords r n p rvec =
+  ( texture ts tex coords p
+  , Just $
+      Ray p (reflect (normalize (rayDirection r)) n `vadd` (fuz `vmul` rvec))
   )
 -------------------------------------------------------------------------------
 -- Dielectric Material
 -------------------------------------------------------------------------------
-material (Dielectric i) _ r n p _ = (Color 1 1 1, Just $ Ray p direction)
+material (Dielectric i) _ _ r n p _ = (Color 1 1 1, Just $ Ray p direction)
  where
-  ratio     = if rayDirection r `dot` n < 0 then i else 1 / i
-  direction = if rayDirection r `dot` n > 0
-    then refract (normalize (rayDirection r)) n ratio
-    else refract (normalize (rayDirection r)) n ratio
+  ratio = if rayDirection r `dot` n < 0 then i else 1 / i
+  direction =
+    if rayDirection r `dot` n > 0
+      then refract (normalize (rayDirection r)) n ratio
+      else refract (normalize (rayDirection r)) n (1 / ratio)
 --------------------------------------------------------------------------------
 -- Emissive Material
 -------------------------------------------------------------------------------
-material (Emissive tex) coords _ _ p _ = (texture tex coords p, Nothing)
+material (Emissive tex) ts coords _ _ p _ = (texture ts tex coords p, Nothing)

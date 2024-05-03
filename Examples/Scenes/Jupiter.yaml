@@ -1,0 +1,33 @@
+height: 255
+width: 400
+samples_per_pixel: 200
+maximum_bounces: 50
+textures:
+  - [jupiter, jupiter.jpg]
+camera:
+  position: [-2, 0, -1]
+  looking_at: [0, 0, 0]
+  focal_length: 1
+  field_of_view: 1.57
+  upward_vector: [0, 1, 0]
+  defocus_angle: 0.05
+  background_texture:
+    tag: solid-color
+    color: [0, 0, 0]
+world:
+  - tag: sphere
+    center: [-15, 0, -25]
+    radius: 20
+    material:
+      tag: emissive
+      texture:
+        tag: solid-color
+        color: [255, 255, 255]
+  - tag: sphere
+    center: [0, 0, 0]
+    radius: 1
+    material:
+      tag: lambertian
+      texture:
+        tag: image-texture
+        image: jupiter

@@ -1,15 +1,17 @@
 height: 255
 width: 400
-samples-per-pixel: 100
-maximum-bounces: 50
+samples_per_pixel: 100
+maximum_bounces: 50
 camera:
   position: [0.5, 0.8, -2.5]
-  looking-at: [0, 1, 0]
-  focal-length: 1
-  field-of-view: 1.57
-  upward-vector: [0, 1, 0]
-  defocus-angle: 0.05
-  background-color: [0, 0, 0]
+  looking_at: [0, 1, 0]
+  focal_length: 1
+  field_of_view: 1.57
+  upward_vector: [0, 1, 0]
+  defocus_angle: 0.05
+  background_texture:
+    tag: solid-color
+    color: [0, 0, 0]
 world:
   - tag: sphere
     center: [0, -100.5, 0]
@@ -25,7 +27,9 @@ world:
     radius: 100
     material:
       tag: emissive
-      emission-color: [255, 255, 255]
+      texture:
+        tag: solid-color
+        color: [255, 255, 255]
   - tag: sphere
     center: [0, 0.8, 0]
     radius: 1
