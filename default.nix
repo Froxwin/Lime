@@ -1,7 +1,14 @@
-{ pkgs ? import <nixpkgs> { } }:
-pkgs.haskellPackages.developPackage {
-  root = ./.;
-  modifier = drv:
-    pkgs.haskell.lib.addBuildTools drv
-    (with pkgs.haskellPackages; [ cabal-install ghc ]);
-}
+{ pkgs ? import <nixpkgs> {
+  overlays = [
+    (nSelf: nSuper: {
+      haskellPkgs = nSuper.haskellPackages.override (old: {
+        overrides = nSelf.lib.fold nSelf.lib.composeExtensions
+          (old.overrides or (_: _: { })) [
+            (nSelf.haskell.lib.packageSourceOverrides { Lime = ./.; })
+            (nSelf.haskell.lib.packagesFromDirectory { directory = ./nix; })
+          ];
+      });
+    })
+  ];
+} }:
+pkgs.haskellPkgs.Lime

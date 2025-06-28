@@ -1,13 +1,20 @@
-packages: Lime.cabal
+packages: .
+
+package *
+  ghc-options: -fwrite-ide-info -g3
 
 jobs: $ncpus
--- shared: True
--- executable-dynamic: True
-
 haddock-html: True
-haddock-hoogle: True
 haddock-quickjump: True
 haddock-hyperlink-source: True
+
+executable-stripping: False
+library-stripping: False
+debug-info: 3
+
+-- source-repository-package
+--   type: git
+--   location: https://github.com/AccelerateHS/accelerate.git
 
 -- tests: True
 test-show-details: direct
@@ -15,6 +22,7 @@ test-show-details: direct
 -- package *
 --   coverage: True
 --   library-coverage: True
+--
 -- package attoparsec
 --   coverage: False
 --   library-coverage: False

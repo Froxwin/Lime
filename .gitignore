@@ -2,4 +2,7 @@ dist-*
 temp*
 *.log
 *.prof
-result*
+/result
+/sandbox
+.vscode
+out.*

@@ -1,7 +1,7 @@
 scene = {
   height = 9 * 30,
   width = 16 * 30,
-  samples_per_pixel = 200,
+  samples_per_pixel = 100,
   maximum_bounces = 50,
   textures = {{"env", "env2.jpg"}},
   camera = {
@@ -13,13 +13,20 @@ scene = {
     defocus_angle = 0,
     background_texture = {
       tag = "image-texture",
-      image = "env"
+      image = "env",
+      style = {
+        tag = "stretch"
+      }
     }
   },
   world = {{
     tag = "sphere",
-    center = {0, 0.7, 0.5},
-    radius = 1,
+    transform = {
+      {
+        tag = "translate",
+        contents = {0, 0.7, 0.5}
+      }
+    },
     material = {
       tag = "metal",
       fuzz = 0,
@@ -50,8 +57,16 @@ for i = 0, 100 do
 
   table.insert(scene.world, {
     tag = "sphere",
-    center = {math.random(-10, 10), math.random(-1, 2), math.random(-10, 10)},
-    radius = 0.3 + (math.random() * 0.2),
+    transform = {
+      {
+        tag = "translate",
+        contents = {math.random(-10, 10), math.random(-1, 2), math.random(-10, 10)}
+      },
+      {
+        tag = "scale",
+        contents = {0.3 + (math.random() * 0.2), 0.3 + (math.random() * 0.2), 0.3 + (math.random() * 0.2)}
+      }
+    },
     material = mat
   })
 end

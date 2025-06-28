@@ -20,7 +20,7 @@ extra-doc-files: README.md
 
 source-repository head
   type:     git
-  location: https://github.com/Froxwin/Lime
+  location: https://github.com/Froxwin/Lime.git
 
 common library-depends
   build-depends:
@@ -28,19 +28,37 @@ common library-depends
     , base
     , containers
     , deepseq
+    , gltf-codec
+    , hslua
     , JuicyPixels
+    , JuicyPixels-extra
+    , lens
+    , linear
+    , mtl
+    , random
+    , template-haskell
     , vector
-    , wavefront
+    -- , wavefront
+    , massiv
+    , massiv-io
+    -- , accelerate
+
+flag warn-all
+  description: Enables warnings that are turned off.
+  default:     False
+  manual:      True
 
 common library
   default-language: Haskell2010
-  ghc-options:
-    -Weverything -Wcompat -Wno-type-defaults -Wno-safe -Wno-unsafe
-    -Wno-implicit-prelude -Wno-missing-kind-signatures
-    -Wno-missing-local-signatures -Wno-all-missed-specialisations
-    -Wno-missing-deriving-strategies -Wno-missing-export-lists
-    -Wno-missing-import-lists -Wno-prepositive-qualified-module
-    -Wno-missing-safe-haskell-mode
+  ghc-options: -g3 -Weverything -Wcompat -O2 -threaded -rtsopts -with-rtsopts=-N
+
+  if !flag(warn-all)
+    ghc-options:
+      -Wno-type-defaults -Wno-safe -Wno-unsafe -Wno-implicit-prelude
+      -Wno-missing-kind-signatures -Wno-missing-local-signatures
+      -Wno-all-missed-specialisations -Wno-missing-deriving-strategies
+      -Wno-missing-export-lists -Wno-missing-import-lists
+      -Wno-prepositive-qualified-module -Wno-missing-safe-haskell-mode
 
 common executable
   import:        library
@@ -48,7 +66,8 @@ common executable
     , base
     , Lime
 
-  ghc-options:   -rtsopts -threaded -with-rtsopts=-N
+  ghc-options: -g3 -O2 -threaded -rtsopts -with-rtsopts=-N
+-- ./Assets/Icon.o
 
 library
   import:             library, library-depends
@@ -58,15 +77,20 @@ library
     InstanceSigs
 
   exposed-modules:
-    Camera
-    Color
-    Engine
-    Materials
-    Primitives
-    Ray
-    Textures
-    Utils
-    Vector
+    Data.Color
+    Data.Ray
+    Lime.Camera
+    Lime.Engine
+    Lime.Internal.Hit
+    Lime.Internal.Utils
+    Lime.Materials
+    Lime.Parser
+    Lime.Post
+    Lime.Primitives
+    Lime.Shapes
+    Lime.Textures
+    Linear.Optics
+    Linear.Transform
 
 executable Lime
   import:         executable
@@ -82,15 +106,21 @@ test-suite Alkali
   import:         executable, library-depends
   type:           exitcode-stdio-1.0
   main-is:        Main.hs
+  other-modules:
+    Optics
+    Primitives
+    Transform
+
   hs-source-dirs: Test
   build-depends:
+    , bytestring
     , tasty
     , tasty-hunit
+    , tasty-quickcheck
     , yaml
-    , bytestring
 
 benchmark Halogen
-  import:         executable
+  import:         executable, library-depends
   type:           exitcode-stdio-1.0
   main-is:        Main.hs
   hs-source-dirs: Benchmark

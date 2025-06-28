@@ -17,17 +17,19 @@ import           HsLua               (Exception, LuaE, LuaError, Name,
                                       getglobal, openlibs, peek, peekViaJSON,
                                       run, top)
 import           Options.Applicative (ParserInfo, execParser, fullDesc, header,
-                                      help, helper, info, long, metavar, short,
-                                      strOption, switch, value, (<**>))
+                                      help, helper, info, long, metavar,
+                                      progDesc, short, showDefault, strOption,
+                                      switch, value, (<**>))
 
-import           Engine              (Scene, ignite)
+import           Lime.Engine         (Scene, ignite)
 
 data Lime = Lime
-  { input :: FilePath
-  , output :: FilePath
-  , preview :: Bool
-  , textures :: FilePath
-  , models :: FilePath
+  { input :: !FilePath
+  , output :: !FilePath
+  , preview :: !Bool
+  , textures :: !FilePath
+  , models :: !FilePath
+  , filter :: !FilePath
   }
 
 lime :: ParserInfo Lime
@@ -39,12 +41,13 @@ lime =
                 <> short 'i'
                 <> metavar "FILE"
                 <> help
-                  "YAML scene file"
+                  "YAML/Lua scene file"
             )
           <*> strOption
             ( long "output"
                 <> short 'o'
                 <> value "out.png"
+                <> showDefault
                 <> metavar "FILE"
                 <> help "Output image"
             )
@@ -58,22 +61,24 @@ lime =
             ( long "textures"
                 <> short 't'
                 <> value "."
+                <> showDefault
                 <> metavar "DIR"
-                <> help
-                  "Directory with texture files"
+                <> help "Directory with texture files"
             )
           <*> strOption
             ( long "models"
                 <> short 'm'
                 <> value "."
+                <> showDefault
                 <> metavar "DIR"
-                <> help
-                  "Directory with model files"
+                <> help "Directory with model files"
             )
+          <*> strOption
+            (long "filter" <> value "" <> metavar "FILES" <> help "Lua filters")
       )
         <**> helper
     )
-    (fullDesc <> header "Lime 0.1.0.0 (c) Froxwin")
+    (fullDesc <> header "Lime 0.1.0.0 (c) Froxwin" <> progDesc "A raytracer")
 
 instance Peekable Scene where
   safepeek :: LuaError e => Peeker e Scene
@@ -85,31 +90,38 @@ getExt =
 
 main :: IO ()
 main = do
-  (Lime i o p t m) <- execParser lime
+  (Lime i o p t m fil) <- execParser lime
+  let f = if null fil then Nothing else Just fil
   case getExt i of
     ".yaml" ->
       decodeFileEither i
-        >>= ignite o p t m
-          . either (error . prettyPrintParseException) id
+        >>= ignite o p t m f
+          . either
+            ( errorWithoutStackTrace
+                . ("\ESC[1;31m" <>)
+                . (<> "\ESC[0m")
+                . prettyPrintParseException
+            )
+            id
     ".lua" ->
       run
         ( openlibs
             >> dofile (Just i)
-            >> (getglobal :: Name -> LuaE Exception Type) "scene"
+            >> (getglobal "scene" :: LuaE Exception Type)
             >> peek top
         )
-        >>= ignite o p t m
+        >>= ignite o p t m f
     ".anim.lua" -> do
       mn <- newManager
       run
         ( openlibs
             >> dofile (Just i)
-            >> (getglobal :: Name -> LuaE Exception Type) "scenes"
+            >> (getglobal "scenes" :: LuaE Exception Type)
             >> peek top
         )
         >>= mapM_
           ( \(j, s) ->
-              forkManaged mn (ignite (o <> "/" <> show j <> ".png") p t m s)
+              forkManaged mn (ignite (o <> "/" <> show j <> ".png") p t m f s)
           )
           . (\xs -> zip [1 .. length xs] xs)
       waitAll mn
@@ -118,7 +130,7 @@ main = do
 data ThreadStatus
   = Running
   | Finished
-  | Threw Exception
+  | Threw !Exception
   deriving (Eq, Show)
 
 newtype ThreadManager
