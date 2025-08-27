@@ -26,22 +26,18 @@ import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
 
 import Data.Coerce
 import Data.Color
-  ( Color (..)
-  , ColorProduct (ColorProduct, getColorProduct)
-  , ColorSum (ColorSum, getColorSum)
-  , scale
-  )
 import Data.List (sortBy)
 import Data.Map (Map)
-import qualified Data.Massiv.Array as A
-import qualified Data.Massiv.Array.IO as A
+import Data.Map qualified as M
+import Data.Massiv.Array qualified as A
+import Data.Massiv.Array.IO qualified as A
 import Data.Maybe
 import Data.Ray (Ray (Ray))
 import Data.Vector (Vector)
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Debug.Trace
 import GHC.Generics (Generic)
-import qualified Graphics.ColorModel as GC
+import Graphics.ColorModel qualified as GC
 import Lime.Internal.Hit
 import Lime.Internal.Utils (worldParse)
 import Lime.Materials (WorldMaterial (Emissive, Lambertian))
@@ -52,7 +48,7 @@ import Lime.Primitives
   )
 import Lime.Textures (WorldTexture (SolidColor), texture)
 import Linear (V2 (V2))
-import Linear.Metric (Metric (dot), normalize)
+import Linear.Metric
 import Linear.V3 (V3 (..), cross)
 import Linear.Vector
   ( Additive ((^+^), (^-^))
@@ -66,18 +62,18 @@ rayColor
   :: Ray
   -> Map String (Image PixelRGBF)
   -> [Primitive]
-  -> StdGen -- V3 Double
+  -> V3 Double -- StdGen -- V3 Double
   -> Int
   -> WorldTexture
   -> Color Double
-rayColor ray@(Ray origin dir) texs objs gen depth background
+rayColor ray@(Ray origin ( dir)) texs objs g depth background
   | depth == 0 = pure 0
   | null hits =
       texture
         texs
         background
         ( HitData
-            { coords = getUV unitDir
+            { coords = getUV dir
             , point = dir
             , normal = error "Something terrible has occurred."
             , param = error "Something unspeakably wrong just happened."
@@ -90,15 +86,19 @@ rayColor ray@(Ray origin dir) texs objs gen depth background
         (getColorProduct . (ColorProduct color <>) . ColorProduct)
         reflectedColor
  where
+  -- (gen, gen') = split g
   reflectedColor =
-    (\t -> rayColor t texs objs gen (depth - 1) background) <$> reflected
-  unitDir = normalize dir
+    (\t -> rayColor t texs objs g (depth - 1) background) <$> reflected
   getUV (V3 px py pz) = (phi / (2 * pi), theta / pi)
    where
     theta = acos (-py)
     phi = atan2 (-pz) px + pi
   -- v = if sample `dot` normal > 0 then sample else negated sample
-  (color, reflected) = material texs gen
+  -- (rv, g') = randomR (V3 (-1) (-1) (-1), V3 1 1 1) gen
+  -- sample =
+  -- normalize rv
+
+  (color, reflected) = material texs g
   hit@(HitData {normal}, material) = head hits
   hits =
     sortBy (\(h1, _) (h2, _) -> compare h1.param h2.param) $
@@ -143,104 +143,41 @@ data Render = Render
 -- to the viewport.
 --
 -- The generation is done __left-to-right__ and __top-to-bottom__.
---
--- The world uses a right handed coordinate system.
 render
-  :: RandomGen p
-  => p
-  -> Scene
+  :: Scene
+  -> StdGen
   -> Map String (Image PixelRGBF)
-  -> A.Image A.S GC.RGB Double
-render gen Scene {camera = Camera {..}, ..} ts =
-  A.makeArrayR
-    A.S
-    A.Par
-    (A.Sz (height A.:. width))
-    ( \(i A.:. j) ->
-        let ui = fromIntegral i; vi = fromIntegral j
-         in (\(Color r g b) -> GC.Pixel $ GC.ColorRGB r g b) $
-              getColorSum $
-                mconcat
-                  [ ColorSum $
-                    (1 / (fromIntegral (length vsample)))
-                      -- (1 / (fromIntegral (length sampleCube) ^ 3))
-                      `scale` rayColor
-                        (Ray diskSample (pixelSample ^-^ diskSample))
-                        ts
-                        (concatMap (primitive) world)
-                        g'
-                        maximumBounces
-                        backgroundTexture
-                  | ((V3 sx sy sz), g) <- the -- sampleCube
-                  -- , sy <- vsample -- sampleCube
-                  , let ((V2 dx dy), g') = randomR ((V2 (-1) (-1)) :: V2 Double, (V2 1 1) :: V2 Double) (mkStdGen g)
-                  , let pixelSample =
-                          bottomLeft
-                            ^+^ ((ui + (sx / fromIntegral width)) *^ horizontal)
-                            ^+^ ((vi + (sy / fromIntegral height)) *^ vertical)
-                  , let diskSample = position ^+^ (dx *^ diskU) ^+^ (dy *^ diskV)
-                  -- , sz <- vsample -- sampleCube
-                  ]
-    )
+  -> [Color Double]
+render (Scene width height samples bounces (Camera {..}) _ _ world) gen texs =
+  [ fmap (** (1 / 2.2)) $
+    getColorSum $
+      mconcat
+        [ ColorSum $
+          (1 / (fromIntegral (length sampleCube) ^ 3))
+            `scale` rayColor
+              (Ray diskSample (normalize (pixelSample ^-^ diskSample)))
+              textureImgs
+              (concatMap (primitive) world)
+              (V3 sx sy sz) -- gen
+              bounces
+              backgroundTexture
+        | sx <- sampleCube
+        , sy <- sampleCube
+        , let pixelSample =
+                bottomLeft
+                  ^+^ ((ui + (sx / fromIntegral width)) *^ horizontal)
+                  ^+^ ((vi + (sy / fromIntegral height)) *^ vertical)
+        , let diskSample =
+                position ^+^ (sx *^ diskU) ^+^ (sy *^ diskV)
+        , sz <- sampleCube
+        ]
+  | vi <- reverse $ scanline $ fromIntegral height
+  , ui <- scanline $ fromIntegral width
+  ]
  where
-  -- trace
-  --   ("nsamples: " <> show (length vsample) <> "\n" <> "samples: " <> show vsample)
-  --   $
-  --   -- gammaCorrection 2 $
-  --   Render width height $ V.fromList $ A.toList
-  --   $ A.map
-  --     ( \(vi, ui) ->
-  --         getColorSum $
-  --           mconcat
-  --             [ ColorSum $
-  --               (1 / (fromIntegral (length vsample)))
-  --                 -- (1 / (fromIntegral (length sampleCube) ^ 3))
-  --                 `scale` rayColor
-  --                   (Ray diskSample (pixelSample ^-^ diskSample))
-  --                   ts
-  --                   (concatMap (primitive ms) world)
-  --                   g'
-  --                   maximumBounces
-  --                   backgroundTexture
-  --             | ((V3 sx sy sz), g) <- the -- sampleCube
-  --             -- , sy <- vsample -- sampleCube
-  --             , let ((V2 dx dy), g') = randomR ((V2 (-1) (-1)) :: V2 Double, (V2 1 1) :: V2 Double) (mkStdGen g)
-  --             , let pixelSample =
-  --                     bottomLeft
-  --                       ^+^ ((ui + (sx / fromIntegral width)) *^ horizontal)
-  --                       ^+^ ((vi + (sy / fromIntegral height)) *^ vertical)
-  --             , let diskSample = position ^+^ (dx *^ diskU) ^+^ (dy *^ diskV)
-  --             -- , sz <- vsample -- sampleCube
-  --             ]
-  --     )
-  -- (A.fromLists' A.Par' (V.toList ( V.map (,) (V.reverse $ scanline (fromIntegral height))
-  --     <*> scanline (fromIntegral width)
-  -- )) :: A.Array A.U A.Ix1 (Double, Double))
-
-  -- theGlazing =
-  --   SceneConfig
-  --     { camera = Camera {..}
-  --     , textures = ts
-  --     , models = ms
-  --     , world = concatMap (primitive ms) world
-  --     , ..
-  --     }
-  scanline q = V.map (/ q) [0 .. q - 1]
-
-  -- sampleCube =
-  -- [-1, (-1 + (1 / ((((samplesPerPixel ** (1 / 3)) - 3) / 2) + 1))) .. 1]
-
-  -- vsample = take (round (samplesPerPixel ** (1 / 3))) $ randomRs ((-1) :: Double, 1 :: Double) gen
-
-  the = zip vsample gens
-
-  gens = take (round (samplesPerPixel)) $ randoms gen :: [Int]
-
-  vsample =
-    take (round (samplesPerPixel)) $
-      randomRs ((V3 (-1) (-1) (-1)) :: V3 Double, (V3 1 1 1) :: V3 Double) gen
-
-  -- samples = [0 .. (round samplesPerPixel)] :: [Int]
+  scanline q = map (/ q) [0 .. q - 1]
+  sampleCube = [-1, (-1 + (1 / ((((samples ** (1 / 3)) - 3) / 2) + 1))) .. 1]
+  textureImgs = texs
 
   -- camera
   w = normalize (position ^-^ lookingAt)
@@ -259,6 +196,128 @@ render gen Scene {camera = Camera {..}, ..} ts =
   diskRadius = focalLength * tan (defocusAngle / 2)
   diskU = diskRadius *^ u
   diskV = diskRadius *^ v
+
+-- |
+-- The 'render' function generates a list of rays directed from the lens aperture
+-- to the viewport.
+--
+-- The generation is done __left-to-right__ and __top-to-bottom__.
+--
+-- The world uses a right handed coordinate system.
+-- render
+--   :: RandomGen p
+--   => p
+--   -> Scene
+--   -> Map String (Image PixelRGBF)
+--   -> A.Image A.S GC.RGB Double
+-- render gen Scene {camera = Camera {..}, ..} ts =
+--   A.makeArrayR
+--     A.S
+--     A.Par
+--     (A.Sz (height A.:. width))
+--     ( \(i A.:. j) ->
+--         let ui = fromIntegral i; vi = fromIntegral j
+--          in (\(Color r g b) -> GC.Pixel $ GC.ColorRGB r g b) $
+--               getColorSum $
+--                 mconcat
+--                   [ ColorSum $
+--                     (1 / (fromIntegral (length vsample)))
+--                       -- (1 / (fromIntegral (length sampleCube) ^ 3))
+--                       `scale` rayColor
+--                         (Ray diskSample (pixelSample ^-^ diskSample))
+--                         ts
+--                         (concatMap (primitive) world)
+--                         g'
+--                         maximumBounces
+--                         backgroundTexture
+--                   | ((V3 sx sy sz), g) <- the -- sampleCube
+--                   -- , sy <- vsample -- sampleCube
+--                   , let ((V2 dx dy), g') = randomR ((V2 (-1) (-1)) :: V2 Double, (V2 1 1) :: V2 Double) (mkStdGen g)
+--                   , let pixelSample =
+--                           bottomLeft
+--                             ^+^ ((ui + (sx / fromIntegral width)) *^ horizontal)
+--                             ^+^ ((vi + (sy / fromIntegral height)) *^ vertical)
+--                   , let diskSample = position ^+^ (dx *^ diskU) ^+^ (dy *^ diskV)
+--                   -- , sz <- vsample -- sampleCube
+--                   ]
+--     )
+--  where
+--   -- trace
+--   --   ("nsamples: " <> show (length vsample) <> "\n" <> "samples: " <> show vsample)
+--   --   $
+--   --   -- gammaCorrection 2 $
+--   --   Render width height $ V.fromList $ A.toList
+--   --   $ A.map
+--   --     ( \(vi, ui) ->
+--   --         getColorSum $
+--   --           mconcat
+--   --             [ ColorSum $
+--   --               (1 / (fromIntegral (length vsample)))
+--   --                 -- (1 / (fromIntegral (length sampleCube) ^ 3))
+--   --                 `scale` rayColor
+--   --                   (Ray diskSample (pixelSample ^-^ diskSample))
+--   --                   ts
+--   --                   (concatMap (primitive ms) world)
+--   --                   g'
+--   --                   maximumBounces
+--   --                   backgroundTexture
+--   --             | ((V3 sx sy sz), g) <- the -- sampleCube
+--   --             -- , sy <- vsample -- sampleCube
+--   --             , let ((V2 dx dy), g') = randomR ((V2 (-1) (-1)) :: V2 Double, (V2 1 1) :: V2 Double) (mkStdGen g)
+--   --             , let pixelSample =
+--   --                     bottomLeft
+--   --                       ^+^ ((ui + (sx / fromIntegral width)) *^ horizontal)
+--   --                       ^+^ ((vi + (sy / fromIntegral height)) *^ vertical)
+--   --             , let diskSample = position ^+^ (dx *^ diskU) ^+^ (dy *^ diskV)
+--   --             -- , sz <- vsample -- sampleCube
+--   --             ]
+--   --     )
+--   -- (A.fromLists' A.Par' (V.toList ( V.map (,) (V.reverse $ scanline (fromIntegral height))
+--   --     <*> scanline (fromIntegral width)
+--   -- )) :: A.Array A.U A.Ix1 (Double, Double))
+
+--   -- theGlazing =
+--   --   SceneConfig
+--   --     { camera = Camera {..}
+--   --     , textures = ts
+--   --     , models = ms
+--   --     , world = concatMap (primitive ms) world
+--   --     , ..
+--   --     }
+--   scanline q = V.map (/ q) [0 .. q - 1]
+
+--   -- sampleCube =
+--   -- [-1, (-1 + (1 / ((((samplesPerPixel ** (1 / 3)) - 3) / 2) + 1))) .. 1]
+
+--   -- vsample = take (round (samplesPerPixel ** (1 / 3))) $ randomRs ((-1) :: Double, 1 :: Double) gen
+
+--   the = zip vsample gens
+
+--   gens = take (round (samplesPerPixel)) $ randoms gen :: [Int]
+
+--   vsample =
+--     take (round (samplesPerPixel)) $
+--       randomRs ((V3 (-1) (-1) (-1)) :: V3 Double, (V3 1 1 1) :: V3 Double) gen
+
+--   -- samples = [0 .. (round samplesPerPixel)] :: [Int]
+
+--   -- camera
+--   w = normalize (position ^-^ lookingAt)
+--   u = normalize $ cross upwardVector w
+--   v = cross w u
+
+--   -- viewport
+--   viewportHeight = 2 * tan (fieldOfView / 2) * focalLength
+--   viewportWidth = viewportHeight * (fromIntegral width / fromIntegral height)
+--   horizontal = viewportWidth *^ u
+--   vertical = viewportHeight *^ v
+--   bottomLeft =
+--     position ^-^ (horizontal ^/ 2) ^-^ (vertical ^/ 2) ^-^ (focalLength *^ w)
+
+--   -- aperture
+--   diskRadius = focalLength * tan (defocusAngle / 2)
+--   diskU = diskRadius *^ u
+--   diskV = diskRadius *^ v
 
 convertToPreview :: Scene -> Scene
 convertToPreview scene =

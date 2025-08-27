@@ -27,10 +27,10 @@
     tools = with pkgs; [
       cabal-install
       ghc
-      stylish-haskell
       hlint
       haskellPkgs.fourmolu
       haskellPkgs.cabal-fmt
+      haskellPkgs.haskell-language-server
     ];
 
     shellHook = ''

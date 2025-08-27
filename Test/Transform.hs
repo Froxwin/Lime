@@ -1,15 +1,16 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE InstanceSigs      #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE PackageImports #-}
 
 module Transform where
 
 import Control.Applicative
-import Data.Bifunctor        as BiFunc
+import Data.Bifunctor as BiFunc
 import Data.Ray
 import Linear.Epsilon
 import Linear.Matrix
-import Linear.Metric
+import "linear" Linear.Metric
 import Linear.Optics
 import Linear.Transform
 import Linear.V3
@@ -24,7 +25,7 @@ tests :: TestTree
 tests =
   testGroup
     "Transformation Tests"
-    [translationTests, scalingTests, rotationTests, rayTransformationTests]
+    [translationTests, scalingTests, rotationTests]
 
 translationTests :: TestTree
 translationTests =

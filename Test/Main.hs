@@ -1,31 +1,31 @@
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
-import           Codec.Picture
-import           Codec.Wavefront
-import           Data.ByteString.Internal
-import           Data.Maybe
-import           Data.Yaml
-import           Linear.Metric
-import           Test.Tasty
-import           Test.Tasty.HUnit
+import Codec.Picture
 
-import           Data.Color
-import           Data.Ray
-import           Lime.Camera
-import           Lime.Engine
-import           Lime.Internal.Hit        hiding (texture)
-import           Lime.Internal.Utils
-import           Lime.Materials           hiding (material)
-import           Lime.Primitives
-import           Lime.Textures            hiding (texture)
-import           Linear.V3
+-- import           Codec.Wavefront
+import Data.ByteString.Internal
+import Data.Maybe
+import Data.Yaml
+import Test.Tasty
+import Test.Tasty.HUnit
 
-import qualified Optics
-import qualified Primitives
-import qualified Transform
+import Data.Color
+import Data.Ray
+import Lime.Camera
+import Lime.Engine
+import Lime.Internal.Hit hiding (texture)
+import Lime.Internal.Utils
+import Lime.Materials hiding (material)
+import Lime.Primitives
+import Lime.Textures hiding (texture)
+import Linear.V3
+
+import Optics qualified
+import Primitives qualified
+import Transform qualified
 
 main :: IO ()
 main = defaultMain unitTests

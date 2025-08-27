@@ -34,6 +34,7 @@ import           Lime.Materials      (WorldMaterial, material)
 import           Linear.Transform
 
 import qualified Debug.Trace         as Debug
+import Data.Fixed (Uni)
 
 type Primitive = Ray -> Double -> Double -> Maybe (HitData, Material)
 
@@ -102,17 +103,17 @@ instance IsHittable Shape where
   -----------------------------------------------------------------------------
   primitive (Sphere (material -> m) ts) = [prim']
    where
-    prim' (rayTransform ts -> ray'@(Ray a d)) {-ray'-} tMin tMax
+    prim' (rayTransform ts -> ray'@(Ray a ( d))) {-ray'-} tMin tMax
       | delta < 0 = Nothing
       | isWithin t = Just (dat t, m (dat t) ray')
       | isWithin t' = Just (dat t', m (dat t') ray')
       | otherwise = Nothing
      where
-      ray@(Ray a d) = rayTransform ts ray'
+      ray = rayTransform ts ray'
       dat q =
           ( HitData
               (getN q)
-              ((rayAt ray' q))
+              ((rayAt ray q))
               q
               (getUV $ getN q)
           )
@@ -124,7 +125,7 @@ instance IsHittable Shape where
       t' = root (+)
       tf = foldr ((!*!) . mkTransform) identity ts
       getN x =
-        normalize $ transform point (transpose $ inv44 tf) (rayAt ray x)
+        normalize $ transform vector (transpose $ inv44 tf) (rayAt ray x)
       isWithin x = tMin <= x && x <= tMax
       getUV (V3 x y z) = ((atan2 (-z) x + pi) / (2 * pi), acos (-y) / pi)
   -----------------------------------------------------------------------------
@@ -153,7 +154,7 @@ instance IsHittable Shape where
   -- Plane Primitive Intersection
   -----------------------------------------------------------------------------
   primitive (Plane ts (material -> m)) =
-    pure $ \(rayTransform ts -> ray@(Ray o d)) tMin tMax ->
+    pure $ \(rayTransform ts -> ray@(Ray o ( d))) tMin tMax ->
       let denom = (V3 0 1 0) `dot` d
           t = ((V3 0 1 0) `dot` ((V3 0 0 0) ^-^ o)) / denom
           tf = foldr ((!*!) . mkTransform) identity ts

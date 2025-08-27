@@ -1,7 +1,7 @@
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# LANGUAGE TupleSections       #-}
+{-# LANGUAGE TupleSections #-}
 
 module Lime.Engine
   ( Scene
@@ -10,34 +10,44 @@ module Lime.Engine
   , render
   ) where
 
-import           Codec.Picture        (Image (Image, imageHeight, imageWidth),
-                                       Pixel (colorMap, mixWith, pixelAt),
-                                       PixelRGB8 (PixelRGB8),
-                                       PixelRGBF (PixelRGBF), convertRGB8,
-                                       generateImage, pixelMap, readImage,
-                                       writeColorReducedGifImage, writePng)
--- import           Codec.Wavefront      (fromFile)
-import           Control.DeepSeq      (deepseq)
-import           Data.Map             (Map)
-import qualified Data.Map             as M
+import Codec.Picture
+  ( Image (Image, imageHeight, imageWidth)
+  , Pixel (colorMap, mixWith, pixelAt)
+  , PixelRGB8 (PixelRGB8)
+  , PixelRGBF (PixelRGBF)
+  , convertRGB8
+  , generateImage
+  , pixelMap
+  , readImage
+  , writeColorReducedGifImage
+  , writePng
+  )
 
-import           Codec.Picture.Extra
-import           Codec.Picture.Types
-import           Data.Color           (Color (Color))
-import qualified Data.Vector          as V
+-- import           Codec.Wavefront      (fromFile)
+import Control.DeepSeq (deepseq)
+import Data.Map (Map)
+import qualified Data.Map as M
+
+import Codec.Picture.Extra
+import Codec.Picture.Types
+import Data.Color (Color (Color))
+import qualified Data.Vector as V
 import qualified Data.Vector.Storable as VS
-import           Lime.Camera          (Render (Render),
-                                       Scene (height, models, textures, width),
-                                       convertToPreview, render)
-import           Lime.Internal.Utils  (prettyError)
+import Lime.Camera
+  ( Render (Render)
+  , Scene (height, models, textures, width)
+  , convertToPreview
+  , render
+  )
+import Lime.Internal.Utils (prettyError)
 
 import qualified Lime.Post
-import           System.Random        (getStdGen)
+import System.Random (getStdGen)
 
-import qualified Data.Massiv.Array    as A
+import qualified Data.Massiv.Array as A
 import qualified Data.Massiv.Array.IO as A
-import           Data.Word
-import qualified Graphics.ColorModel  as GC
+import Data.Word
+import qualified Graphics.ColorModel as GC
 
 load
   :: FilePath
@@ -84,21 +94,25 @@ ignite output preview texDir modelDir fil rawScene = do
   -- let (Render w h renderStream) = Lime.Post.bloom $ render gen scene texs objs
   -- let (Render w h renderStream) = render gen scene texs objs
 
-  let pixelData = A.computeAs A.S $ (A.map (\t -> ((round :: Double -> Word8) . (* 255)) <$> t) $ render gen scene texs)
-
-  -- let !pixelData =
-  --       V.map
-  --         ( \(Color r g b) ->
-  --             PixelRGB8 (round $ r * 255) (round $ g * 255) (round $ b * 255)
+  -- let pixelData =
+  --       A.computeAs A.S $
+  --         ( A.map (\t -> ((round :: Double -> Word8) . (* 255)) <$> t) $
+  --             render gen scene texs
   --         )
-  --         renderStream
 
-  -- let img =
-  --       generateImage
-  --         (\x y -> pixelData V.! ((w * y) + x))
-  --         w
-  --         h
+  let !pixelData =
+        map
+          ( \(Color r g b) ->
+              PixelRGB8 (round $ r * 255) (round $ g * 255) (round $ b * 255)
+          )
+          $ render scene gen texs
 
-  -- img `deepseq` writePng output img -- fully evaluate img before trying to write
-  A.writeArray A.PNG A.def output pixelData
+  let img =
+        generateImage
+          (\x y -> pixelData !! ((scene.width * y) + x))
+          scene.width
+          scene.height
+
+  img `deepseq` writePng output img -- fully evaluate img before trying to write
+  -- A.writeArray A.PNG A.def output pixelData
   putStrLn $ "[ \ESC[1;32mSaved to " ++ output ++ "\ESC[1;0m ]"

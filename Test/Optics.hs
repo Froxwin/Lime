@@ -1,11 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs      #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE PackageImports #-}
 
 module Optics where
 
 import Linear.Epsilon        (Epsilon (nearZero))
-import Linear.Metric         (Metric (dot, norm), normalize)
+import "linear" Linear.Metric         (Metric (dot, norm), normalize)
 import Linear.V3             (V3 (..))
 import Linear.Vector         (Additive ((^-^)), negated)
 import Test.Tasty            (TestTree, testGroup)

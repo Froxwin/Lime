@@ -49,7 +49,7 @@ flag warn-all
   manual:      True
 
 common library
-  default-language: Haskell2010
+  default-language: GHC2021
   ghc-options: -g3 -Weverything -Wcompat -O2 -threaded -rtsopts -with-rtsopts=-N
 
   if !flag(warn-all)
@@ -91,6 +91,7 @@ library
     Lime.Textures
     Linear.Optics
     Linear.Transform
+    Linear.Metric
 
 executable Lime
   import:         executable
