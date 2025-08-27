@@ -30,7 +30,6 @@ common library-depends
     , deepseq
     , JuicyPixels
     , vector
-    , wavefront
 
 common library
   default-language: Haskell2010

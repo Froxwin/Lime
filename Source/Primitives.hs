@@ -5,10 +5,6 @@
 
 module Primitives where
 
-import           Codec.Wavefront  (Element (elValue), Face (Face),
-                                   FaceIndex (faceLocIndex),
-                                   Location (Location),
-                                   WavefrontOBJ (objFaces, objLocations))
 import           Control.Monad    (guard)
 import           Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
 import           Data.Map         (Map)
@@ -32,7 +28,7 @@ type Primitive =
   -> Maybe (Vec3, Vec3, Double, Material, TextureCoords)
 
 class TWorldObject a where
-  primitive :: Map String WavefrontOBJ -> a -> [Primitive]
+  primitive :: a -> [Primitive]
 
 data WorldObject
   = Sphere
@@ -70,10 +66,10 @@ data WorldObject
       , vertex3 :: Vec3
       , material :: WorldMaterial
       }
-  | Mesh
-      { objFile :: String
-      , material :: WorldMaterial
-      }
+  -- | Mesh
+  --     { objFile :: String
+  --     , material :: WorldMaterial
+  --     }
   deriving (Show, Generic, Eq)
 
 instance FromJSON WorldObject where
@@ -81,11 +77,11 @@ instance FromJSON WorldObject where
   parseJSON = worldParse
 
 instance TWorldObject WorldObject where
-  primitive :: Map String WavefrontOBJ -> WorldObject -> [Primitive]
+  primitive :: WorldObject -> [Primitive]
   -----------------------------------------------------------------------------
   -- Sphere Primitive Intersection
   -----------------------------------------------------------------------------
-  primitive _ (Sphere c r m) = [prim']
+  primitive (Sphere c r m) = [prim']
    where
     prim' ray@(Ray a d) tMin tMax
       | delta < 0 = Nothing
@@ -113,7 +109,7 @@ instance TWorldObject WorldObject where
   -----------------------------------------------------------------------------
   -- Quadrilateral Primitive Intersection
   -----------------------------------------------------------------------------
-  primitive _ (Quad q u v m) = [prim']
+  primitive (Quad q u v m) = [prim']
    where
     prim' ray@(Ray a dir) tMin tMax
       | not $ t >= tMin && t <= tMax = Nothing
@@ -135,7 +131,7 @@ instance TWorldObject WorldObject where
   -----------------------------------------------------------------------------
   -- Plane Primitive Intersection
   -----------------------------------------------------------------------------
-  primitive _ (Plane q n m) = [prim']
+  primitive (Plane q n m) = [prim']
    where
     prim' ray@(Ray a dir) tMin tMax
       | denom == 0 = Nothing
@@ -147,26 +143,26 @@ instance TWorldObject WorldObject where
   -----------------------------------------------------------------------------
   -- Circle Primitive Intersection
   -----------------------------------------------------------------------------
-  primitive o (Circle c r n m) = [prim']
+  primitive (Circle c r n m) = [prim']
    where
     prim' ray tMin tMax =
-      head (primitive o (Plane c n m)) ray tMin tMax
+      head (primitive (Plane c n m)) ray tMin tMax
         >>= ( \u@(_, q, _, _, _) -> guard (magnitude (q `vsub` c) <= r) >> Just u
             )
   -----------------------------------------------------------------------------
   -- Ring Primitive Intersection
   -----------------------------------------------------------------------------
-  primitive o (Ring c r1 r2 n m) = [prim']
+  primitive (Ring c r1 r2 n m) = [prim']
    where
     prim' ray tMin tMax =
       outerCircle >> guard (isNothing innerCircle) >> outerCircle
      where
-      innerCircle = head (primitive o (Circle c r1 n m)) ray tMin tMax
-      outerCircle = head (primitive o (Circle c r2 n m)) ray tMin tMax
+      innerCircle = head (primitive (Circle c r1 n m)) ray tMin tMax
+      outerCircle = head (primitive (Circle c r2 n m)) ray tMin tMax
   -----------------------------------------------------------------------------
   -- Triangle Primitive Intersection
   -----------------------------------------------------------------------------
-  primitive _ (Triangle v1 v2 v3 m) = [prim']
+  primitive (Triangle v1 v2 v3 m) = [prim']
    where
     prim' ray@(Ray o dir) tMin tMax
       | denom == 0 = Nothing
@@ -197,30 +193,30 @@ instance TWorldObject WorldObject where
   -----------------------------------------------------------------------------
   -- Triangle Mesh Intersection
   -----------------------------------------------------------------------------
-  primitive objs (Mesh k m) =
-    concat $ V.toList $ V.map (primitive objs) $ makeTriangles m obj
-   where
-    obj =
-      fromMaybe (prettyError $ "Object `" ++ k ++ "` not defined") (objs M.!? k)
+  -- primitive objs (Mesh k m) =
+  --   concat $ V.toList $ V.map (primitive objs) $ makeTriangles m obj
+  --  where
+  --   obj =
+  --     fromMaybe (prettyError $ "Object `" ++ k ++ "` not defined") (objs M.!? k)
 
-makeTriangles :: WorldMaterial -> WavefrontOBJ -> Vector WorldObject
-makeTriangles m obj =
-  V.map
-    ( ( \case
-          [v1, v2, v3] -> Triangle v1 v2 v3 m
-          _ -> error "what"
-      )
-        . map
-          ( ( \(Location x y z _) ->
-                Vec3 (realToFrac x) (realToFrac y) (realToFrac z)
-            )
-              . ((objLocations obj V.!) . (1 `subtract`))
-          )
-        . ( \(Face i1 i2 i3 xis) ->
-              if not $ null xis
-                then prettyError "Invalid object (possibly not triangulated)"
-                else map faceLocIndex [i1, i2, i3]
-          )
-        . elValue
-    )
-    $ objFaces obj
+-- makeTriangles :: WorldMaterial -> WavefrontOBJ -> Vector WorldObject
+-- makeTriangles m obj =
+--   V.map
+--     ( ( \case
+--           [v1, v2, v3] -> Triangle v1 v2 v3 m
+--           _ -> error "what"
+--       )
+--         . map
+--           ( ( \(Location x y z _) ->
+--                 Vec3 (realToFrac x) (realToFrac y) (realToFrac z)
+--             )
+--               . ((objLocations obj V.!) . (1 `subtract`))
+--           )
+--         . ( \(Face i1 i2 i3 xis) ->
+--               if not $ null xis
+--                 then prettyError "Invalid object (possibly not triangulated)"
+--                 else map faceLocIndex [i1, i2, i3]
+--           )
+--         . elValue
+--     )
+--     $ objFaces obj

@@ -8,7 +8,6 @@ module Engine
 
 import Codec.Picture   (Pixel8, PixelRGB8 (PixelRGB8), generateImage, readImage,
                         writePng)
-import Codec.Wavefront (fromFile)
 import Control.DeepSeq (deepseq)
 import Data.Vector     ((!))
 
@@ -40,8 +39,7 @@ ignite :: FilePath -> Bool -> FilePath -> FilePath -> Scene -> IO ()
 ignite output preview texDir modelDir rawScene = do
   let !scene = if preview then convertToPreview rawScene else rawScene
   !texs <- load texDir readImage "Texture" scene.textures
-  !objs <- load modelDir fromFile "Object" scene.objects
-  let pixelData = makeImage scene.width $ render scene objs texs
+  let pixelData = makeImage scene.width $ render scene texs
   pixelData `deepseq`
     writePng output $
       generateImage

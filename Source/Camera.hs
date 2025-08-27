@@ -5,7 +5,6 @@ module Camera where
 
 import           Codec.Picture    (DynamicImage, Image, PixelRGB8 (PixelRGB8),
                                    PixelRGBF (..), convertRGB8, pixelMap)
-import           Codec.Wavefront  (WavefrontOBJ)
 import           Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
 import           Data.List        (sortBy)
 import           Data.Map         (Map)
@@ -61,10 +60,9 @@ rayColor ray@(Ray origin direction) texs objs sample depth background
 -- The generation is done __left-to-right__ and __top-to-bottom__.
 render
   :: Scene
-  -> Map String WavefrontOBJ
   -> Map String DynamicImage
   -> [Color Double]
-render (Scene width height samples bounces (Camera {..}) _ _ world) objs texs =
+render (Scene width height samples bounces (Camera {..}) _ _ world) texs =
   [ correctGamma $
     foldl
       addColor
@@ -73,7 +71,7 @@ render (Scene width height samples bounces (Camera {..}) _ _ world) objs texs =
         `scaleColor` rayColor
           (Ray diskSample (pixelSample `vsub` diskSample))
           textureImgs
-          (concatMap (primitive objs) world)
+          (concatMap primitive world)
           (Vec3 sx sy sz)
           bounces
           backgroundTexture
