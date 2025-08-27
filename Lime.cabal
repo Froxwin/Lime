@@ -28,7 +28,7 @@ common library-depends
     , base
     , containers
     , deepseq
-    , gltf-codec
+    -- , gltf-codec
     , hslua
     , JuicyPixels
     , JuicyPixels-extra
