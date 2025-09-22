@@ -3,12 +3,22 @@
 
 module Lime.Internal.Utils where
 
-import Data.Aeson.Types (FromJSON, GFromJSON, Options (..), Parser, Value, Zero,
-                         camelTo2, defaultOptions, genericParseJSON, parseJSON)
-import GHC.Generics     (Generic (Rep))
-import Linear.V3        (V3 (..))
+import Data.Aeson.Types
+  ( FromJSON
+  , GFromJSON
+  , Options (..)
+  , Parser
+  , Value
+  , Zero
+  , camelTo2
+  , defaultOptions
+  , genericParseJSON
+  , parseJSON
+  )
+import GHC.Generics (Generic (Rep))
+import Linear.V3 (V3 (..))
 
-import Data.Color       (Color)
+import Data.Color (Color)
 
 -- getPix :: [Color Double] -> Int -> Int -> Int -> Color Double
 -- getPix img w x y = img !! ((w * y) + x)

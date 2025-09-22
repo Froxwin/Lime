@@ -1,23 +1,26 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE NoFieldSelectors      #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoFieldSelectors #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
 module Lime.Textures where
 
-import Codec.Picture       (Image (imageHeight, imageWidth), Pixel (pixelAt),
-                            PixelRGBF (..))
-import Data.Aeson.Types    (FromJSON (parseJSON), Parser, Value)
-import Data.Fixed          (mod')
-import Data.Map            (Map, (!?))
-import Data.Maybe          (fromMaybe)
-import GHC.Generics        (Generic)
-import Linear.Metric       (Metric (dot))
+import Codec.Picture
+  ( Image (imageHeight, imageWidth)
+  , Pixel (pixelAt)
+  , PixelRGBF (..)
+  )
+import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
+import Data.Fixed (mod')
+import Data.Map (Map, (!?))
+import Data.Maybe (fromMaybe)
+import GHC.Generics (Generic)
+import Linear.Metric (Metric (dot))
 
-import Data.Color          (Color (..))
-import Lime.Internal.Hit   (HitData (HitData, coords, normal, point))
+import Data.Color (Color (..))
+import Lime.Internal.Hit (HitData (HitData, coords, normal, point))
 import Lime.Internal.Utils (prettyError, worldParse)
-import Linear              (V3 (..))
+import Linear (V3 (..))
 
 -- | A texture is just represented as a function that takes information about
 -- the intersection and gives the color of the point of intersection
@@ -90,4 +93,5 @@ texture ts (ImageTexture key style) HitData {coords = (u, v)} = case style of
 -------------------------------------------------------------------------------
 texture _ NormalMap (HitData {normal = V3 r g b}) =
   (* 0.5) . (+ 1) <$> Color r g b
+
 -------------------------------------------------------------------------------

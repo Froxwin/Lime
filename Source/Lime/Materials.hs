@@ -59,17 +59,17 @@ material (Lambertian tex) hit@(HitData {normal, point}) _ ts rvec =
 -------------------------------------------------------------------------------
 -- Metallic Material
 -------------------------------------------------------------------------------
--- material (Metal fuz tex) hit@(HitData {normal, point}) (Ray _ d) ts rvec =
---   ( texture ts tex hit
---   , Just $ Ray point (reflect (normalize d) normal ^+^ (fuz *^ v))
---   )
---  where
---   v = if sample `dot` normal > 0 then sample else negated sample
---   sample = fst $ randomR (V3 (-1) (-1) (-1), V3 1 1 1) rvec
+material (Metal fuz tex) hit@(HitData {normal, point}) (Ray _ d) ts rvec =
+  ( texture ts tex hit
+  , Just $ Ray point (reflect (normalize d) normal ^+^ (fuz *^ v))
+  )
+ where
+  v = if sample `dot` normal > 0 then sample else negated sample
+  sample = rvec
 -------------------------------------------------------------------------------
 -- Dielectric Material
 -------------------------------------------------------------------------------
-material (Dielectric i) (HitData {normal = n, point}) (Ray _ ( v)) _ _ =
+material (Dielectric i) (HitData {normal = n, point}) (Ray _ (v)) _ _ =
   ( pure 1
   , Just $
       Ray point $

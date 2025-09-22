@@ -26,7 +26,7 @@ import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
 
 import Data.Coerce
 import Data.Color
-import Data.List (sortBy)
+import Data.List (minimumBy, sortBy)
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Massiv.Array qualified as A
@@ -66,7 +66,7 @@ rayColor
   -> Int
   -> WorldTexture
   -> Color Double
-rayColor ray@(Ray origin ( dir)) texs objs g depth background
+rayColor ray@(Ray origin (dir)) texs objs g depth background
   | depth == 0 = pure 0
   | null hits =
       texture
@@ -99,10 +99,11 @@ rayColor ray@(Ray origin ( dir)) texs objs g depth background
   -- normalize rv
 
   (color, reflected) = material texs g
-  hit@(HitData {normal}, material) = head hits
-  hits =
-    sortBy (\(h1, _) (h2, _) -> compare h1.param h2.param) $
-      mapMaybe (($ (1 / 0)) . ($ 0.001) . ($ ray)) objs
+  hit@(HitData {normal}, material) =
+    minimumBy
+      (\(h1, _) (h2, _) -> compare (norm $ h1.point ^-^ origin) (norm $ h2.point ^-^ origin))
+      hits
+  hits = mapMaybe (($ (1 / 0)) . ($ 0.001) . ($ ray)) objs
 
 -- rayColor :: V3 Double -> Int -> Ray -> Reader SceneConfig (Color Double)
 -- rayColor sample depth ray@(Ray _ (normalize -> dir)) = do
@@ -149,7 +150,7 @@ render
   -> Map String (Image PixelRGBF)
   -> [Color Double]
 render (Scene width height samples bounces (Camera {..}) _ _ world) gen texs =
-  [ fmap (** (1 / 2.2)) $
+  [
     getColorSum $
       mconcat
         [ ColorSum $

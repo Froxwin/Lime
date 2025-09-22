@@ -32,9 +32,11 @@ import           Lime.Internal.Hit
 import           Lime.Internal.Utils (prettyError, worldParse)
 import           Lime.Materials      (WorldMaterial, material)
 import           Linear.Transform
+import Linear.Matrix
 
 import qualified Debug.Trace         as Debug
 import Data.Fixed (Uni)
+import Control.Lens ((^.))
 
 type Primitive = Ray -> Double -> Double -> Maybe (HitData, Material)
 
@@ -92,6 +94,12 @@ instance FromJSON Shape where
   parseJSON :: Value -> Parser Shape
   parseJSON = worldParse
 
+getScale :: [Transform] -> V3 Double
+getScale ts =
+  case [s | Scale s <- ts] of
+    (s:_) -> s        -- first Scale found
+    []    -> V3 1 1 1 -- default scale if none
+
 instance IsHittable Shape where
   primitive :: Shape -> [Primitive]
   -----------------------------------------------------------------------------
@@ -103,18 +111,18 @@ instance IsHittable Shape where
   -----------------------------------------------------------------------------
   primitive (Sphere (material -> m) ts) = [prim']
    where
-    prim' (rayTransform ts -> ray'@(Ray a ( d))) {-ray'-} tMin tMax
+    prim' ((rayTransform ts) -> ray'@(Ray (a) (d))) {-ray'-} tMin tMax
       | delta < 0 = Nothing
       | isWithin t = Just (dat t, m (dat t) ray')
       | isWithin t' = Just (dat t', m (dat t') ray')
       | otherwise = Nothing
      where
-      ray = rayTransform ts ray'
+      -- ray = rayTransform ts ray'
       dat q =
           ( HitData
               (getN q)
-              ((rayAt ray q))
-              q
+              (transform point tf (rayAt ray' q))
+              (norm ((transform point tf (rayAt ray' q)) ^-^ (transform point tf (rayOrigin ray'))))--q
               (getUV $ getN q)
           )
       delta =
@@ -124,8 +132,13 @@ instance IsHittable Shape where
       t = root (-)
       t' = root (+)
       tf = foldr ((!*!) . mkTransform) identity ts
-      getN x =
-        normalize $ transform vector (transpose $ inv44 tf) (rayAt ray x)
+      -- getN x =
+      --   normalize $ transform vector (transpose $ inv44 tf) (rayAt ray' x)
+      getN z =
+          let pObj = rayAt ray' z
+              nObj = normalize (pObj - V3 0 0 0)
+              nWorld = transform vector (transpose $ inv44 tf) nObj
+          in normalize nWorld
       isWithin x = tMin <= x && x <= tMax
       getUV (V3 x y z) = ((atan2 (-z) x + pi) / (2 * pi), acos (-y) / pi)
   -----------------------------------------------------------------------------

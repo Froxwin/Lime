@@ -8,6 +8,7 @@ module Linear.Transform
   , invTransform
   , mkTransform
   , mkTransforms
+
     -- * Re-export of matrix utilities
   , (!*)
   , M44
@@ -17,15 +18,22 @@ module Linear.Transform
   , vector
   ) where
 
-import Control.Lens        ((^.))
-import Data.Aeson.Types    (FromJSON (parseJSON), Parser, Value)
-import GHC.Generics        (Generic)
+import Control.Lens ((^.))
+import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
+import GHC.Generics (Generic)
 import Lime.Internal.Utils (worldParse)
-import Linear.Matrix       (M44, fromQuaternion, identity, inv44, m33_to_m44,
-                            (!*!), (!*))
-import Linear.Quaternion   as Quaternion (axisAngle)
-import Linear.V3           (R3 (_xyz), V3 (..))
-import Linear.V4           (V4 (V4), point, vector)
+import Linear.Matrix
+  ( M44
+  , fromQuaternion
+  , identity
+  , inv44
+  , m33_to_m44
+  , (!*)
+  , (!*!)
+  )
+import Linear.Quaternion as Quaternion (axisAngle)
+import Linear.V3 (R3 (_xyz), V3 (..))
+import Linear.V4 (V4 (V4), point, vector)
 
 {- NOTE [About Linear Transforms]
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,11 +53,13 @@ instance FromJSON Transform where
   parseJSON :: Value -> Parser Transform
   parseJSON = worldParse
 
-transform, invTransform
-  :: (V3 Double -> V4 Double) -- ^ See 'vector' and 'point'
-  -> M44 Double
-  -> V3 Double
-  -> V3 Double
+transform
+  , invTransform
+    :: (V3 Double -> V4 Double)
+    -- ^ See 'vector' and 'point'
+    -> M44 Double
+    -> V3 Double
+    -> V3 Double
 transform f tf v = (tf !* f v) ^. _xyz
 invTransform f tf v = (inv44 tf !* f v) ^. _xyz
 {-# INLINE transform #-}

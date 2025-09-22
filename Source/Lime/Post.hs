@@ -1,9 +1,9 @@
 module Lime.Post where
 
-import           Data.Bifunctor
-import           Data.Color
-import qualified Data.Vector    as V
-import           Lime.Camera
+import Data.Bifunctor
+import Data.Color
+import Data.Vector qualified as V
+import Lime.Camera
 
 type Filter = Render -> Render
 

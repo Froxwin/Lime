@@ -26,13 +26,13 @@ import Codec.Picture
 -- import           Codec.Wavefront      (fromFile)
 import Control.DeepSeq (deepseq)
 import Data.Map (Map)
-import qualified Data.Map as M
+import Data.Map qualified as M
 
 import Codec.Picture.Extra
 import Codec.Picture.Types
 import Data.Color (Color (Color))
-import qualified Data.Vector as V
-import qualified Data.Vector.Storable as VS
+import Data.Vector qualified as V
+import Data.Vector.Storable qualified as VS
 import Lime.Camera
   ( Render (Render)
   , Scene (height, models, textures, width)
@@ -41,13 +41,13 @@ import Lime.Camera
   )
 import Lime.Internal.Utils (prettyError)
 
-import qualified Lime.Post
+import Lime.Post qualified
 import System.Random (getStdGen)
 
-import qualified Data.Massiv.Array as A
-import qualified Data.Massiv.Array.IO as A
+import Data.Massiv.Array qualified as A
+import Data.Massiv.Array.IO qualified as A
 import Data.Word
-import qualified Graphics.ColorModel as GC
+import Graphics.ColorModel qualified as GC
 
 load
   :: FilePath

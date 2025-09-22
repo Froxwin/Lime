@@ -2,9 +2,9 @@
 
 module Data.Color where
 
-import Control.DeepSeq  (NFData)
+import Control.DeepSeq (NFData)
 import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
-import GHC.Generics     (Generic)
+import GHC.Generics (Generic)
 
 data Color a = Color !a !a !a
   deriving (Show, Eq, Ord, Generic)
