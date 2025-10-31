@@ -17,6 +17,8 @@ import Codec.Picture
   , pixelMap
   )
 import Codec.Picture.Types (gammaCorrection)
+import Control.Parallel.Strategies
+import GHC.Conc (getNumCapabilities)
 
 -- import           Codec.Wavefront      (WavefrontOBJ)
 import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
@@ -26,7 +28,7 @@ import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
 
 import Data.Coerce
 import Data.Color
-import Data.List (minimumBy, sortBy)
+import Data.List (mapAccumL, minimumBy, sortBy)
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Massiv.Array qualified as A
@@ -35,6 +37,7 @@ import Data.Maybe
 import Data.Ray (Ray (Ray))
 import Data.Vector (Vector)
 import Data.Vector qualified as V
+import Data.Wavefront qualified
 import Debug.Trace
 import GHC.Generics (Generic)
 import Graphics.ColorModel qualified as GC
@@ -42,9 +45,14 @@ import Lime.Internal.Hit
 import Lime.Internal.Utils (worldParse)
 import Lime.Materials (WorldMaterial (Emissive, Lambertian))
 import Lime.Primitives
-  ( IsHittable (primitive)
+  ( BVH
+  , Mesh (Mesh)
   , Primitive
-  , Shape (material)
+  , Shape (Shape, material)
+  , buildBVH
+  , constructBVH
+  , traverseBVH
+  , triangulate
   )
 import Lime.Textures (WorldTexture (SolidColor), texture)
 import Linear (V2 (V2))
@@ -61,34 +69,33 @@ import System.Random
 rayColor
   :: Ray
   -> Map String (Image PixelRGBF)
-  -> [Primitive]
+  -> BVH
   -> V3 Double -- StdGen -- V3 Double
   -> Int
   -> WorldTexture
   -> Color Double
-rayColor ray@(Ray origin (dir)) texs objs g depth background
+rayColor ray@(Ray origin (dir)) texs bvh g depth background
   | depth == 0 = pure 0
-  | null hits =
+  | isNothing eh =
       texture
         texs
         background
         ( HitData
             { coords = getUV dir
             , point = dir
-            , normal = error "Something terrible has occurred."
-            , param = error "Something unspeakably wrong just happened."
+            , normal = error "Tried to access skybox normal"
+            , param = error "Tried to access skybox hit"
             }
         )
   | otherwise =
       maybe
         color
-        -- (getColorProduct . mconcat . map coerce . (color :) . pure)
         (getColorProduct . (ColorProduct color <>) . ColorProduct)
         reflectedColor
  where
   -- (gen, gen') = split g
   reflectedColor =
-    (\t -> rayColor t texs objs g (depth - 1) background) <$> reflected
+    (\t -> rayColor t texs bvh g (depth - 1) background) <$> reflected
   getUV (V3 px py pz) = (phi / (2 * pi), theta / pi)
    where
     theta = acos (-py)
@@ -99,11 +106,14 @@ rayColor ray@(Ray origin (dir)) texs objs g depth background
   -- normalize rv
 
   (color, reflected) = material texs g
-  hit@(HitData {normal}, material) =
-    minimumBy
-      (\(h1, _) (h2, _) -> compare (norm $ h1.point ^-^ origin) (norm $ h2.point ^-^ origin))
-      hits
-  hits = mapMaybe (($ (1 / 0)) . ($ 0.001) . ($ ray)) objs
+  eh = traverseBVH bvh ray 1.0e-3 (1 / 0)
+  hit@(HitData {normal}, material) = fromJust eh
+
+-- hit@(HitData {normal}, material) =
+--   minimumBy
+--     (\(h1, _) (h2, _) -> compare (norm $ h1.point ^-^ origin) (norm $ h2.point ^-^ origin))
+--     hits
+-- hits = mapMaybe (($ (1 / 0)) . ($ 0.001) . ($ ray)) objs
 
 -- rayColor :: V3 Double -> Int -> Ray -> Reader SceneConfig (Color Double)
 -- rayColor sample depth ray@(Ray _ (normalize -> dir)) = do
@@ -144,41 +154,129 @@ data Render = Render
 -- to the viewport.
 --
 -- The generation is done __left-to-right__ and __top-to-bottom__.
+-- render
+--   :: Scene
+--   -> StdGen
+--   -> Map String (Image PixelRGBF)
+--   -> [Color Double]
+-- render (Scene width height samples bounces (Camera {..}) _ _ world) gen texs =
+--   [
+--     getColorSum $
+--       mconcat
+--         [ ColorSum $
+--           (1 / (fromIntegral (length sampleCube) ^ 3))
+--             `scale` rayColor
+--               (Ray diskSample (normalize (pixelSample ^-^ diskSample)))
+--               textureImgs
+--               (concatMap (primitive) world)
+--               (V3 sx sy sz) -- gen
+--               bounces
+--               backgroundTexture
+--         | sx <- sampleCube
+--         , sy <- sampleCube
+--         , let pixelSample =
+--                 bottomLeft
+--                   ^+^ ((ui + (sx / fromIntegral width)) *^ horizontal)
+--                   ^+^ ((vi + (sy / fromIntegral height)) *^ vertical)
+--         , let diskSample =
+--                 position ^+^ (sx *^ diskU) ^+^ (sy *^ diskV)
+--         , sz <- sampleCube
+--         ]
+--   | vi <- reverse $ scanline $ fromIntegral height
+--   , ui <- scanline $ fromIntegral width
+--   ]
+--  where
+--   scanline q = map (/ q) [0 .. q - 1]
+--   sampleCube = [-1, (-1 + (1 / ((((samples ** (1 / 3)) - 3) / 2) + 1))) .. 1]
+--   textureImgs = texs
+
+--   -- camera
+--   w = normalize (position ^-^ lookingAt)
+--   u = normalize $ cross upwardVector w
+--   v = cross w u
+
+--   -- viewport
+--   viewportHeight = 2 * tan (fieldOfView / 2) * focalLength
+--   viewportWidth = viewportHeight * (fromIntegral width / fromIntegral height)
+--   horizontal = viewportWidth *^ u
+--   vertical = viewportHeight *^ v
+--   bottomLeft =
+--     position ^-^ (horizontal ^/ 2) ^-^ (vertical ^/ 2) ^-^ (focalLength *^ w)
+
+--   -- aperture
+--   diskRadius = focalLength * tan (defocusAngle / 2)
+--   diskU = diskRadius *^ u
+--   diskV = diskRadius *^ v
+
 render
   :: Scene
   -> StdGen
   -> Map String (Image PixelRGBF)
+  -> Map String Data.Wavefront.Object
   -> [Color Double]
-render (Scene width height samples bounces (Camera {..}) _ _ world) gen texs =
-  [
-    getColorSum $
-      mconcat
-        [ ColorSum $
-          (1 / (fromIntegral (length sampleCube) ^ 3))
-            `scale` rayColor
-              (Ray diskSample (normalize (pixelSample ^-^ diskSample)))
-              textureImgs
-              (concatMap (primitive) world)
-              (V3 sx sy sz) -- gen
-              bounces
-              backgroundTexture
-        | sx <- sampleCube
-        , sy <- sampleCube
-        , let pixelSample =
-                bottomLeft
-                  ^+^ ((ui + (sx / fromIntegral width)) *^ horizontal)
-                  ^+^ ((vi + (sy / fromIntegral height)) *^ vertical)
-        , let diskSample =
-                position ^+^ (sx *^ diskU) ^+^ (sy *^ diskV)
-        , sz <- sampleCube
-        ]
-  | vi <- reverse $ scanline $ fromIntegral height
-  , ui <- scanline $ fromIntegral width
-  ]
+render (Scene width height samples bounces (Camera {..}) _ _ world) gen texs objs =
+  let
+    coords =
+      [ (i, j)
+      | i <- reverse $ scanline $ fromIntegral height
+      , j <- scanline $ fromIntegral width
+      ]
+
+    pixelColor rgen (vi, ui) =
+      ( gen'
+      , getColorSum $
+          mconcat
+            [ ColorSum $
+              (1 / samples)
+                `scale` rayColor
+                  (Ray diskSample (normalize (pixelSample ^-^ diskSample)))
+                  texs
+                  ( constructBVH
+                      ( concatMap
+                          ( \q -> case q of
+                              Single s -> [s]
+                              Compund (Mesh s t m) ->
+                                map
+                                  (\z -> Shape z t m)
+                                  (let a = triangulate (objs M.! s) in (traceShow $ length a) a)
+                          )
+                          world
+                      )
+                  )
+                  r
+                  bounces
+                  backgroundTexture
+            | (V2 sx sy, r) <- ss
+            , let pixelSample =
+                    bottomLeft
+                      ^+^ ((ui + (sx / fromIntegral width)) *^ horizontal)
+                      ^+^ ((vi + (sy / fromIntegral height)) *^ vertical)
+            , let diskSample =
+                    position ^+^ (sx *^ diskU) ^+^ (sy *^ diskV)
+            ]
+      )
+     where
+      (gen0, sampleGen) = split rgen
+      (gen', scatterGen) = split gen0
+
+      sampleSquare :: [V2 Double]
+      sampleSquare =
+        take (round samples) $
+          randomRs (V2 (-0.5) (-0.5), V2 0.5 0.5) sampleGen
+
+      randomVecs :: [V3 Double]
+      randomVecs =
+        map normalize $
+          take (round samples) $
+            randomRs (V3 (-1) (-1) (-1), V3 1 1 1) scatterGen
+
+      ss = zip sampleSquare randomVecs
+   in
+    withStrategy
+      (parListChunk (max 1 (length coords `div` (16 * 20))) rdeepseq)
+      (snd $ mapAccumL pixelColor gen coords)
  where
   scanline q = map (/ q) [0 .. q - 1]
-  sampleCube = [-1, (-1 + (1 / ((((samples ** (1 / 3)) - 3) / 2) + 1))) .. 1]
-  textureImgs = texs
 
   -- camera
   w = normalize (position ^-^ lookingAt)
@@ -228,7 +326,7 @@ render (Scene width height samples bounces (Camera {..}) _ _ world) gen texs =
 --                         (Ray diskSample (pixelSample ^-^ diskSample))
 --                         ts
 --                         (concatMap (primitive) world)
---                         g'
+--                         (V3 sx sy sz)
 --                         maximumBounces
 --                         backgroundTexture
 --                   | ((V3 sx sy sz), g) <- the -- sampleCube
@@ -328,14 +426,14 @@ convertToPreview scene =
     , samplesPerPixel = 50
     , maximumBounces = 2
     , camera = scene.camera {backgroundTexture = SolidColor (Color 1 1 1)}
-    , world =
-        map
-          ( \x -> case x.material of
-              Emissive _ -> x
-              _ ->
-                x {Lime.Primitives.material = Lambertian (SolidColor (pure 0.6))}
-          )
-          scene.world
+    , world = error "TODO"
+    -- map
+    --   ( \x -> case x.material of
+    --       Emissive _ -> x
+    --       _ ->
+    --       x {Lime.Primitives.material = Lambertian (SolidColor (pure 0.6))}
+    --   )
+    --   scene.world
     }
 
 -- | Represents camera configuration
@@ -354,6 +452,12 @@ instance FromJSON Camera where
   parseJSON :: Value -> Parser Camera
   parseJSON = worldParse
 
+data Object = Single Shape | Compund Mesh deriving (Show, Generic, Eq)
+
+instance FromJSON Object where
+  parseJSON :: Value -> Parser Object
+  parseJSON = worldParse
+
 -- | Represents a world scene
 data Scene = Scene
   { width :: !Int
@@ -363,7 +467,7 @@ data Scene = Scene
   , camera :: !Camera
   , textures :: Maybe [(String, FilePath)]
   , models :: Maybe [(String, FilePath)]
-  , world :: ![Shape]
+  , world :: ![Object]
   }
   deriving (Show, Generic, Eq)
 

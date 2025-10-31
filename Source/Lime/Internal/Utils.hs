@@ -32,8 +32,7 @@ worldParse =
       , rejectUnknownFields = True
       }
 
-prettyError :: [Char] -> a
-prettyError err = errorWithoutStackTrace $ "\ESC[1;31m" ++ err ++ "\ESC[0m"
+prettyError err = error $ "\ESC[1;31m" ++ err ++ "\ESC[0m"
 
 instance FromJSON a => FromJSON (V3 a) where
   parseJSON :: Value -> Parser (V3 a)

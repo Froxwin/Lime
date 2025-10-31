@@ -50,10 +50,9 @@ material :: WorldMaterial -> HitData -> Ray -> Material
 -- Lambertian Material
 -------------------------------------------------------------------------------
 material (Lambertian tex) hit@(HitData {normal, point}) _ ts rvec =
-  (texture ts tex hit, Just $ Ray point (normalize (rvec ^+^ normal)))
+  (texture ts tex hit, Just $ Ray point (normalize (v ^+^ normal)))
  where
-
--- v =  if sample `dot` normal > 0 then sample else negated sample
+  v = if rvec `dot` normal > 0 then rvec else negated rvec
 -- sample =
 --   normalize $ head $ filter (\t -> norm t <= 1) $ randomRs (V3 (-1) (-1) (-1), V3 1 1 1) rvec
 -------------------------------------------------------------------------------

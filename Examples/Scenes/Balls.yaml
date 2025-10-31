@@ -68,8 +68,8 @@
 #           tag: solid-color
 #           color: [0, 0, 255]
 
-height: 255
-width: 400
+height: 480
+width: 640
 samples_per_pixel: 100
 maximum_bounces: 50
 camera:
@@ -84,30 +84,30 @@ camera:
     tag: solid-color
     color: [0, 0, 0]
 world:
-  - tag: sphere
+  - geometry: sphere
     transform:
-      - tag: scale
-        contents: [100, 100, 100]
       - tag: translate
         contents: [0, -100.5, 0]
+      - tag: scale
+        contents: [100, 100, 100]
     material:
       tag: metal
       fuzz: 0.3
       texture:
         tag: solid-color
         color: [168, 189, 6]
-  - tag: sphere
+  - geometry: sphere
     transform:
-      - tag: scale
-        contents: [100, 100, 100]
       - tag: translate
         contents: [0, 102, 0]
+      - tag: scale
+        contents: [100, 100, 100]
     material:
       tag: emissive
       texture:
         tag: solid-color
         color: [255, 255, 255]
-  - tag: sphere
+  - geometry: sphere
     transform:
       - tag: translate
         contents: [0, 0.8, 0]
@@ -119,12 +119,12 @@ world:
       texture:
         tag: solid-color
         color: [205, 78, 38]
-  - tag: sphere
+  - geometry: sphere
     transform:
-      - tag: scale
-        contents: [1, 1, 1]
       - tag: translate
         contents: [-2.5, 0.5, 0]
+      - tag: scale
+        contents: [1, 1, 1]
     material:
       tag: lambertian
       texture:
@@ -136,7 +136,7 @@ world:
         texture2:
           tag: solid-color
           color: [0, 0, 255]
-  - tag: sphere
+  - geometry: sphere
     transform:
       - tag: translate
         contents: [1, 0.5, 2]

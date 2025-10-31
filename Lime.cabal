@@ -38,10 +38,14 @@ common library-depends
     , random
     , template-haskell
     , vector
+    , filepath
     -- , wavefront
     , massiv
     , massiv-io
+    , parallel
     -- , accelerate
+    , megaparsec
+    , bytestring
 
 flag warn-all
   description: Enables warnings that are turned off.
@@ -50,7 +54,7 @@ flag warn-all
 
 common library
   default-language: GHC2021
-  ghc-options: -g3 -Weverything -Wcompat -O2 -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -g3 -Weverything -Wcompat -O2
 
   if !flag(warn-all)
     ghc-options:
@@ -79,6 +83,7 @@ library
   exposed-modules:
     Data.Color
     Data.Ray
+    Data.Wavefront
     Lime.Camera
     Lime.Engine
     Lime.Internal.Hit

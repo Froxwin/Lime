@@ -1,27 +1,63 @@
-{-# LANGUAGE InstanceSigs      #-}
-{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Main where
 
-import           Control.Concurrent  (MVar, ThreadId, forkIO, modifyMVar,
-                                      newEmptyMVar, newMVar, putMVar, takeMVar,
-                                      tryTakeMVar)
-import           Control.Exception   (try)
-import qualified Data.Map            as M
-import           Data.Yaml           (decodeFileEither,
-                                      prettyPrintParseException)
-import           HsLua               (Exception, LuaE, LuaError, Name,
-                                      Peekable (..), Peeker, Type, dofile,
-                                      getglobal, openlibs, peek, peekViaJSON,
-                                      run, top)
-import           Options.Applicative (ParserInfo, execParser, fullDesc, header,
-                                      help, helper, info, long, metavar,
-                                      progDesc, short, showDefault, strOption,
-                                      switch, value, (<**>))
+import Control.Concurrent
+  ( MVar
+  , ThreadId
+  , forkIO
+  , modifyMVar
+  , newEmptyMVar
+  , newMVar
+  , putMVar
+  , takeMVar
+  , tryTakeMVar
+  )
+import Control.Exception (try)
+import Data.Map qualified as M
+import Data.Yaml
+  ( decodeFileEither
+  , prettyPrintParseException
+  )
+import HsLua
+  ( Exception
+  , LuaE
+  , LuaError
+  , Name
+  , Peekable (..)
+  , Peeker
+  , Type
+  , dofile
+  , getglobal
+  , openlibs
+  , peek
+  , peekViaJSON
+  , run
+  , top
+  )
+import Options.Applicative
+  ( ParserInfo
+  , execParser
+  , fullDesc
+  , header
+  , help
+  , helper
+  , info
+  , long
+  , metavar
+  , progDesc
+  , short
+  , showDefault
+  , strOption
+  , switch
+  , value
+  , (<**>)
+  )
 
-import           Lime.Engine         (Scene, ignite)
+import Lime.Engine (Scene, ignite)
 
 data Lime = Lime
   { input :: !FilePath

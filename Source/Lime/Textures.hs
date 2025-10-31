@@ -40,7 +40,7 @@ data WorldTexture
       { image :: !String
       , style :: !TextureFillStyle
       }
-  | NormalMap
+  | NormalMap | UVMap
   deriving (Show, Generic, Eq)
 
 data TextureFillStyle = Stretch | Repeat {scale :: !Double}
@@ -93,5 +93,5 @@ texture ts (ImageTexture key style) HitData {coords = (u, v)} = case style of
 -------------------------------------------------------------------------------
 texture _ NormalMap (HitData {normal = V3 r g b}) =
   (* 0.5) . (+ 1) <$> Color r g b
-
+texture _ UVMap (HitData {coords=(u, v)}) = Color u 0 v
 -------------------------------------------------------------------------------

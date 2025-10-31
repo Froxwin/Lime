@@ -47,7 +47,11 @@ data Transform
       { axis :: !(V3 Double)
       , angle :: !Double
       }
+  | Arbitrary !(M44 Double)
   deriving (Show, Eq, Generic, Ord)
+
+instance FromJSON (V4 Double)
+instance FromJSON (M44 Double)
 
 instance FromJSON Transform where
   parseJSON :: Value -> Parser Transform
@@ -71,6 +75,7 @@ mkTransform (Translate (V3 tx ty tz)) =
 mkTransform (Scale (V3 tx ty tz)) =
   V4 (V4 tx 0 0 0) (V4 0 ty 0 0) (V4 0 0 tz 0) (V4 0 0 0 1)
 mkTransform (Rotate {..}) = m33_to_m44 $ fromQuaternion $ axisAngle axis angle
+mkTransform (Arbitrary m) = m
 {-# INLINE mkTransform #-}
 
 -- | Make a transformation matrix from a foldable container of transformations

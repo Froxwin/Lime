@@ -1,6 +1,6 @@
 module Data.Ray where
 
-import Linear.Matrix ((!*!))
+import Linear.Matrix ((!*!), M44)
 import Linear.Metric
 import Linear.Transform
   ( Transform
@@ -25,7 +25,5 @@ rayAt (Ray o (d)) t = o ^+^ (t *^ d)
 {-# INLINE rayAt #-}
 
 -- | Performs the inverse of a list of transformations on a ray
-rayTransform :: [Transform] -> Ray -> Ray
-rayTransform ts (Ray o (d)) = Ray (transform point tf o) (transform vector tf d)
- where
-  tf = foldr ((!*!) . inv44 . mkTransform) identity ts
+rayTransform :: M44 Double -> Ray -> Ray
+rayTransform itf (Ray o (d)) = Ray (transform point itf o) (transform vector itf d)
