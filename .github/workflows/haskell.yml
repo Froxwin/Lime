@@ -68,7 +68,7 @@ jobs:
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
       - name: Build
-        run: cabal build
+        run: cabal build exe:Lime
 
       # - name: Run tests
       #   run: cabal test all

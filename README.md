@@ -1,8 +1,10 @@
 # Lime
 
 <div align="center">
+
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Froxwin/Lime/haskell.yml?branch=master&style=for-the-badge&label=Build&logo=haskell)
 ![GitHub License](https://img.shields.io/github/license/Froxwin/Lime?style=for-the-badge)
+
 </div>
 
 Lime is a small Haskell render engine that uses recursive path tracing to produce
