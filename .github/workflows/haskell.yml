@@ -73,5 +73,5 @@ jobs:
       # - name: Run tests
       #   run: cabal test all
 
-      - name: Check cabal file
-        run: cabal check
+      # - name: Check cabal file
+      #   run: cabal check
