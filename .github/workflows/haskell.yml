@@ -1,9 +1,18 @@
 name: build
 on:
   push:
-    branches: [master]
+    branches: [ master ]
+    paths:
+      - '.github/workflows/haskell.yml'
+      - '*.cabal'
+      - 'cabal.project'
+      - 'Source/**'
+      - 'Lime/**'
+      - 'Test/**'
+      - 'Benchmark/**'
+
   pull_request:
-    branches: [master]
+    branches: [ master ]
     paths:
       - '.github/workflows/haskell.yml'
       - '*.cabal'
