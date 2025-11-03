@@ -11,12 +11,15 @@ homepage:        https://github.com/Froxwin/Lime/
 bug-reports:     https://github.com/Froxwin/Lime/issues
 license:         BSD-3-Clause
 license-file:    LICENSE.md
-copyright:       2024 Froxwin
+copyright:       2025 Froxwin
 author:          Froxwin
 maintainer:      56168224+Froxwin@users.noreply.github.com
 category:        Graphics
 build-type:      Simple
 extra-doc-files: README.md
+
+data-files:
+  build/kernel.ptx
 
 source-repository head
   type:     git
@@ -28,7 +31,6 @@ common library-depends
     , base
     , containers
     , deepseq
-    -- , gltf-codec
     , hslua
     , JuicyPixels
     , JuicyPixels-extra
@@ -39,11 +41,9 @@ common library-depends
     , template-haskell
     , vector
     , filepath
-    -- , wavefront
     , massiv
     , massiv-io
     , parallel
-    -- , accelerate
     , megaparsec
     , bytestring
 
@@ -54,7 +54,8 @@ flag warn-all
 
 common library
   default-language: GHC2021
-  ghc-options: -g3 -Weverything -Wcompat -O2
+  ghc-options: -Wall
+-- -Weverything -Wcompat
 
   if !flag(warn-all)
     ghc-options:
@@ -70,7 +71,7 @@ common executable
     , base
     , Lime
 
-  ghc-options: -g3 -O2 -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
 -- ./Assets/Icon.o
 
 library
@@ -79,7 +80,12 @@ library
   default-extensions:
     DeriveGeneric
     InstanceSigs
-
+  c-sources:
+    cbits/driver.c
+  extra-libraries:
+    cuda
+  other-modules:
+    Paths_Lime
   exposed-modules:
     Data.Color
     Data.Ray
@@ -89,14 +95,13 @@ library
     Lime.Internal.Hit
     Lime.Internal.Utils
     Lime.Materials
-    Lime.Parser
     Lime.Post
     Lime.Primitives
-    Lime.Shapes
     Lime.Textures
     Linear.Optics
     Linear.Transform
     Linear.Metric
+    Lime.Device
 
 executable Lime
   import:         executable
@@ -124,12 +129,3 @@ test-suite Alkali
     , tasty-hunit
     , tasty-quickcheck
     , yaml
-
-benchmark Halogen
-  import:         executable, library-depends
-  type:           exitcode-stdio-1.0
-  main-is:        Main.hs
-  hs-source-dirs: Benchmark
-  build-depends:
-    , criterion
-    , random

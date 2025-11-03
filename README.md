@@ -3,6 +3,7 @@
 <div align="center">
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Froxwin/Lime/haskell.yml?branch=master&style=for-the-badge&label=Build&logo=haskell)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Froxwin/Lime/nix.yml?style=for-the-badge&logo=nixos&label=Flake)
 ![GitHub License](https://img.shields.io/github/license/Froxwin/Lime?style=for-the-badge)
 
 </div>

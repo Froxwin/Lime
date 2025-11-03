@@ -44,7 +44,9 @@ import Data.Massiv.Array qualified as A
 import Data.Massiv.Array.IO qualified as A
 import Data.Wavefront (loadWavefront)
 import Data.Word
+import GHC.Stack (errorWithStackTrace)
 import Graphics.ColorModel qualified as GC
+import Lime.Device
 import Lime.Primitives (constructBVH)
 
 -- | Function to load any kind of asset (textures, models , etc)
@@ -81,6 +83,9 @@ type Filter = FilePath
 ignite
   :: FilePath -> Bool -> FilePath -> FilePath -> Maybe Filter -> Scene -> IO ()
 ignite output preview texDir modelDir fil rawScene = do
+  printGpuInfo
+  hmm
+  errorWithoutStackTrace ""
   let !scene = if preview then convertToPreview rawScene else rawScene
   !texs <-
     M.map
