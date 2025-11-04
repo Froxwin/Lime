@@ -246,23 +246,38 @@ render (Scene width height samples bounces (Camera {..}) _ _ world) gen texs obj
                   r
                   bounces
                   backgroundTexture
-            | (V2 sx sy, r) <- ss
+            | (V2 sx sy, V2 dx dy, r) <- ss
             , let pixelSample =
                     bottomLeft
                       ^+^ ((ui + (sx / fromIntegral width)) *^ horizontal)
                       ^+^ ((vi + (sy / fromIntegral height)) *^ vertical)
             , let diskSample =
-                    position ^+^ (sx *^ diskU) ^+^ (sy *^ diskV)
+                    position ^+^ (dx *^ diskU) ^+^ (dy *^ diskV)
             ]
       )
      where
       (gen0, sampleGen) = split rgen
-      (gen', scatterGen) = split gen0
+      (gen1, diskGen) = split gen0
+      (gen', scatterGen) = split gen1
 
       sampleSquare :: [V2 Double]
       sampleSquare =
         take (round samples) $
           randomRs (V2 (-0.5) (-0.5), V2 0.5 0.5) sampleGen
+
+      bokeh :: V2 Double -> Bool
+      bokeh (V2 x y) = ((x' ^ 2) + (y' ^ 2) - 0.1) ^ 3 <= (x' ^ 2) * (y' ^ 3)
+       where
+        x' = a * x
+        y' = a * (y - k)
+        a = 0.8
+        k = -0.1
+
+      sampleDisk :: [V2 Double]
+      sampleDisk =
+        take (round samples) $
+          filter bokeh $
+            randomRs (V2 (-0.5) (-0.5), V2 0.5 0.5) diskGen
 
       randomVecs :: [V3 Double]
       randomVecs =
@@ -270,7 +285,7 @@ render (Scene width height samples bounces (Camera {..}) _ _ world) gen texs obj
           take (round samples) $
             randomRs (V3 (-1) (-1) (-1), V3 1 1 1) scatterGen
 
-      ss = zip sampleSquare randomVecs
+      ss = zip3 sampleSquare sampleDisk randomVecs
    in
     withStrategy
       (parListChunk (max 1 (length coords `div` (16 * 20))) rdeepseq)

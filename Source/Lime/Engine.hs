@@ -11,43 +11,17 @@ module Lime.Engine
   ) where
 
 import Codec.Picture
-  ( Image (Image, imageHeight, imageWidth)
-  , Pixel (colorMap, mixWith, pixelAt)
-  , PixelRGB8 (PixelRGB8)
-  , PixelRGBF (PixelRGBF)
-  , convertRGB8
-  , generateImage
-  , pixelMap
-  , readImage
-  , writeColorReducedGifImage
-  , writePng
-  )
-
-import Codec.Picture.Extra
-import Codec.Picture.Types
 import Control.DeepSeq (deepseq)
 import Data.Color (Color (Color))
+import Data.List (nub, (\\))
 import Data.Map (Map)
 import Data.Map qualified as M
-import Data.Vector qualified as V
-import Data.Vector.Storable qualified as VS
-import Lime.Camera
+import Data.Wavefront (loadWavefront)
 import System.FilePath ((</>))
-
-import Lime.Internal.Utils (prettyError)
-
-import Lime.Post qualified
 import System.Random (getStdGen)
 
-import Data.List (nub, (\\))
-import Data.Massiv.Array qualified as A
-import Data.Massiv.Array.IO qualified as A
-import Data.Wavefront (loadWavefront)
-import Data.Word
-import GHC.Stack (errorWithStackTrace)
-import Graphics.ColorModel qualified as GC
-import Lime.Device
-import Lime.Primitives (constructBVH)
+import Lime.Camera
+import Lime.Internal.Utils (prettyError)
 
 -- | Function to load any kind of asset (textures, models , etc)
 loadAsset
@@ -83,9 +57,6 @@ type Filter = FilePath
 ignite
   :: FilePath -> Bool -> FilePath -> FilePath -> Maybe Filter -> Scene -> IO ()
 ignite output preview texDir modelDir fil rawScene = do
-  printGpuInfo
-  hmm
-  errorWithoutStackTrace ""
   let !scene = if preview then convertToPreview rawScene else rawScene
   !texs <-
     M.map
@@ -100,18 +71,8 @@ ignite output preview texDir modelDir fil rawScene = do
       )
       <$> loadAsset texDir readImage "Texture" scene.textures
   !objs <- loadAsset modelDir loadWavefront "Model" scene.models
-  -- !objs <- load modelDir fromFile "Object" scene.models
 
   gen <- getStdGen
-
-  -- let (Render w h renderStream) = Lime.Post.bloom $ render gen scene texs objs
-  -- let (Render w h renderStream) = render gen scene texs objs
-
-  -- let !pixelData =
-  --       A.computeAs A.S $
-  --         ( A.map (\t -> ((round :: Double -> Word8) . (* 255)) <$> t) $
-  --             render gen scene texs
-  --         )
 
   let !pixelData =
         map
@@ -126,6 +87,5 @@ ignite output preview texDir modelDir fil rawScene = do
           scene.width
           scene.height
 
-  img `deepseq` writePng output img -- fully evaluate img before trying to write
-  -- pixelData `deepseq` A.writeArray A.PNG A.def output pixelData
+  img `deepseq` writePng output img
   putStrLn $ "[ \ESC[1;32mSaved to " ++ output ++ "\ESC[1;0m ]"

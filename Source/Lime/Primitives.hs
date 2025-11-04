@@ -85,34 +85,19 @@ traverseBVH (BVHNode (AABB lo hi) left right) =
     let
       t1 = (/) <$> (lo ^-^ o) <*> d
       t2 = (/) <$> (hi ^-^ o) <*> d
-      tmin = ((-) 1e-6) $ maximum $ min <$> t1 <*> t2
-      tmax = ((+) 1e-6) $ minimum $ max <$> t1 <*> t2
+      tmin = maximum $ min <$> t1 <*> t2
+      tmax = minimum $ max <$> t1 <*> t2
+      tmin' = max tMin (tmin - 1e-6)
+      tmax' = min tMax (tmax + 1e-6)
       hits =
         catMaybes
-          [traverseBVH left ray tMin tMax, traverseBVH right ray tMin tMax]
+          [traverseBVH left ray tmin' tmax', traverseBVH right ray tmin' tmax']
      in
-      guard (tmax >= tmin)
+      guard (tmax' >= tmin')
         >> case hits of
           [] -> Nothing
           [h] -> Just h
           hs -> Just $ minimumBy (compare `on` (\(q, _) -> q.param)) hs
-
--- traverseBVH :: BVH -> Primitive
--- traverseBVH (BVHLeaf prim _) ray tMin tMax = prim ray tMin tMax
--- traverseBVH (BVHNode (AABB lo hi) left right) ray@(Ray o d) tMin tMax =
---   let
---     t1 = (lo - o) / d
---     t2 = (hi - o) / d
-
---     tmin' = max tMin (maximum (min <$> t1 <*> t2))
---     tmax' = min tMax (minimum (max <$> t1 <*> t2))
---    in
---     if tmax' < tmin'
---       then Nothing
---       else case (traverseBVH left ray tmin' tmax', traverseBVH right ray tmin' tmax') of
---         (Nothing, r) -> r
---         (l, Nothing) -> l
---         (Just (dat1, p1), Just (dat2, p2)) -> if dat1.param < dat2.param then Just (dat1, p1) else Just (dat2, p2)
 
 constructBVH :: [Shape] -> BVH
 constructBVH [] = error "constructBVH: empty scene"
