@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE PackageImports #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Transform where
 
@@ -10,7 +10,6 @@ import Data.Bifunctor as BiFunc
 import Data.Ray
 import Linear.Epsilon
 import Linear.Matrix
-import "linear" Linear.Metric
 import Linear.Optics
 import Linear.Transform
 import Linear.V3
@@ -18,6 +17,7 @@ import Linear.Vector
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
+import "linear" Linear.Metric
 
 import Debug.Trace
 
