@@ -1,19 +1,25 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE InstanceSigs      #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE PackageImports #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Optics where
 
-import Linear.Epsilon        (Epsilon (nearZero))
-import "linear" Linear.Metric         (Metric (dot, norm), normalize)
-import Linear.V3             (V3 (..))
-import Linear.Vector         (Additive ((^-^)), negated)
-import Test.Tasty            (TestTree, testGroup)
-import Test.Tasty.QuickCheck (Arbitrary (arbitrary), Gen, Testable (property),
-                              testProperties, testProperty, (==>))
+import Linear.Epsilon (Epsilon (nearZero))
+import Linear.V3 (V3 (..))
+import Linear.Vector (Additive ((^-^)), negated)
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.QuickCheck
+  ( Arbitrary (arbitrary)
+  , Gen
+  , Testable (property)
+  , testProperties
+  , testProperty
+  , (==>)
+  )
+import "linear" Linear.Metric (Metric (dot, norm), normalize)
 
-import Linear.Optics         (reflect, refract)
+import Linear.Optics (reflect, refract)
 
 tests :: TestTree
 tests = testGroup "Optics Tests" [propsReflection]
@@ -59,7 +65,7 @@ propsRefraction =
                 && v
                   `dot` n
                   <= 0
-                ==> nearZero ((sinei / siner) - (1 / mu))
+                    ==> nearZero ((sinei / siner) - (1 / mu))
       )
     ,
       ( "Invariant when ior = 1"
@@ -76,7 +82,7 @@ propsRefraction =
                 && v
                   `dot` n
                   <= 0
-                ==> nearZero
+                    ==> nearZero
                 $ (norm v)
                   - (norm (refract v n mu))
       )

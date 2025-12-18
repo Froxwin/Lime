@@ -2,19 +2,18 @@
 
 module Data.Wavefront where
 
+import Data.Bifunctor (Bifunctor (first))
 import Data.ByteString (ByteString)
 import Data.ByteString qualified as BS
+import Data.Char (chr)
 import Data.Void (Void)
+import Linear.V2
+import Linear.V3
+import Linear.V4
 import Text.Megaparsec (Parsec, (<|>))
 import Text.Megaparsec qualified as P
 import Text.Megaparsec.Byte qualified as B
 import Text.Megaparsec.Byte.Lexer qualified as L
-
-import Data.Bifunctor (Bifunctor (first))
-import Data.Char (chr)
-import Linear.V2
-import Linear.V3
-import Linear.V4
 
 type Parser = Parsec Void ByteString
 
@@ -24,33 +23,33 @@ sc = L.space B.space1 (L.skipLineComment "#") (L.skipBlockComment "{=" "=}")
 float :: Parser Double
 float = L.signed sc L.float
 
-vertexParser :: Parser (V3 Double)
+vertexParser :: Parser (V3 Float)
 vertexParser = do
   _ <- B.string "v "
   vec <-
     V3
-      <$> (float)
-      <*> (B.string " " *> float)
-      <*> (B.string " " *> float)
-  w <- P.option 1.0 (B.string " " *> float)
+      <$> (float >>= (pure . realToFrac))
+      <*> (B.string " " *> float >>= (pure . realToFrac))
+      <*> (B.string " " *> float >>= (pure . realToFrac))
+  w <- P.option 1.0 (B.string " " *> float >>= (pure . realToFrac))
   pure $ (/ w) <$> vec
 
-normalParser :: Parser (V3 Double)
+normalParser :: Parser (V3 Float)
 normalParser = do
   _ <- B.string "vn"
   V3
-    <$> (B.string " " *> float)
-    <*> (B.string " " *> float)
-    <*> (B.string " " *> float)
+    <$> (B.string " " *> float >>= (pure . realToFrac))
+    <*> (B.string " " *> float >>= (pure . realToFrac))
+    <*> (B.string " " *> float >>= (pure . realToFrac))
 
-uvParser :: Parser (V2 Double)
+uvParser :: Parser (V2 Float)
 uvParser = do
   _ <- B.string "vt"
   (V3 u v w) <-
     V3
-      <$> (B.string " " *> float)
-      <*> P.option 0.0 (B.string " " *> float)
-      <*> P.option 0.0 (B.string " " *> float)
+      <$> (B.string " " *> float >>= (pure . realToFrac))
+      <*> P.option 0.0 (B.string " " *> float >>= (pure . realToFrac))
+      <*> P.option 0.0 (B.string " " *> float >>= (pure . realToFrac))
   if u > 1.0 || v > 1.0
     then fail "Texture coordinates out of bounds"
     else pure $ V2 u v
@@ -80,9 +79,9 @@ faceParser =
 
 data Object = Object
   { name :: ByteString
-  , verticies :: [V3 Double]
-  , normals :: [V3 Double]
-  , uvs :: [V2 Double]
+  , verticies :: [V3 Float]
+  , normals :: [V3 Float]
+  , uvs :: [V2 Float]
   , faces :: [Face]
   }
   deriving Show
@@ -94,9 +93,9 @@ smoothingParser = do
   pure ()
 
 data ObjEntry
-  = EntryV (V3 Double)
-  | EntryN (V3 Double)
-  | EntryUV (V2 Double)
+  = EntryV (V3 Float)
+  | EntryN (V3 Float)
+  | EntryUV (V2 Float)
   | EntryF Face
 
 entryParser =
@@ -107,7 +106,7 @@ entryParser =
     <$> faceParser
 
 partitionEntries
-  :: [ObjEntry] -> ([V3 Double], [V3 Double], [V2 Double], [Face])
+  :: [ObjEntry] -> ([V3 Float], [V3 Float], [V2 Float], [Face])
 partitionEntries = foldr go ([], [], [], [])
  where
   go e (vs, ns, uvs, fs) = case e of

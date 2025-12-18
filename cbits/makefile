@@ -6,7 +6,6 @@ CFLAGS = -fPIC -O2
 
 all: $(OUT) $(OUT)/kernel.ptx $(OUT)/driver.so
 
-# ensure the build directory exists
 $(OUT):
 	mkdir -p $(OUT)
 
@@ -20,4 +19,4 @@ $(OUT)/driver.so: $(OUT)/driver.o
 	$(GCC) -shared $< -lcuda -o $@
 
 clean:
-	rm -f $(OUT)/*.o $(OUT)/*.so $(OUT)/*.ptx
+	rm -rf $(OUT)

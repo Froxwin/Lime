@@ -17,9 +17,7 @@ maintainer:      56168224+Froxwin@users.noreply.github.com
 category:        Graphics
 build-type:      Simple
 extra-doc-files: README.md
-
-data-files:
-  build/kernel.ptx
+data-files:      build/kernel.ptx
 
 source-repository head
   type:     git
@@ -29,33 +27,49 @@ common library-depends
   build-depends:
     , aeson
     , base
+    , bytestring
     , containers
     , deepseq
+    , filepath
     , hslua
     , JuicyPixels
     , JuicyPixels-extra
     , lens
     , linear
+    , massiv
+    , massiv-io
+    , megaparsec
     , mtl
+    , parallel
     , random
     , template-haskell
     , vector
-    , filepath
-    , massiv
-    , massiv-io
-    , parallel
-    , megaparsec
-    , bytestring
+    , ghc-prim
+    , criterion
+    , primitive
 
 flag warn-all
   description: Enables warnings that are turned off.
   default:     False
   manual:      True
 
+flag cuda
+  description: Compile with cuda support
+  default:     False
+  manual:      True
+
+flag simd
+  description: Compile with SIMD support
+  default: False
+  manual: True
+
 common library
   default-language: GHC2021
-  ghc-options: -Wall
--- -Weverything -Wcompat
+  ghc-options:      -Wall
+
+  -- -Weverything -Wcompat
+  if flag(simd)
+    CPP-Options: -DSIMD
 
   if !flag(warn-all)
     ghc-options:
@@ -71,7 +85,8 @@ common executable
     , base
     , Lime
 
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:   -threaded -rtsopts -with-rtsopts=-N
+
 -- ./Assets/Icon.o
 
 library
@@ -80,17 +95,24 @@ library
   default-extensions:
     DeriveGeneric
     InstanceSigs
-  c-sources:
-    cbits/driver.c
-  extra-libraries:
-    cuda
-  other-modules:
-    Paths_Lime
+
+  -- c-sources:          cbits/driver.c
+
+  -- if flag(cuda)
+  --   extra-libraries: cuda
+
+  -- else
+  --   cpp-options: -DNO_CUDA
+
+  other-modules:      Paths_Lime
   exposed-modules:
     Data.Color
     Data.Ray
     Data.Wavefront
+    Data.Vec
+    Lime.Context
     Lime.Camera
+    --Lime.Device
     Lime.Engine
     Lime.Internal.Hit
     Lime.Internal.Utils
@@ -98,10 +120,9 @@ library
     Lime.Post
     Lime.Primitives
     Lime.Textures
+    Linear.Metric
     Linear.Optics
     Linear.Transform
-    Linear.Metric
-    Lime.Device
 
 executable Lime
   import:         executable
@@ -117,10 +138,10 @@ test-suite Alkali
   import:         executable, library-depends
   type:           exitcode-stdio-1.0
   main-is:        Main.hs
-  other-modules:
-    Optics
-    Primitives
-    Transform
+  -- other-modules:
+  --   Optics
+  --   Primitives
+  --   Transform
 
   hs-source-dirs: Test
   build-depends:
@@ -129,3 +150,10 @@ test-suite Alkali
     , tasty-hunit
     , tasty-quickcheck
     , yaml
+
+benchmark Halogen
+  import: executable, library-depends
+  type:           exitcode-stdio-1.0
+  main-is:        Main.hs
+  hs-source-dirs: Benchmark
+  build-depends: criterion, random

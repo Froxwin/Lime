@@ -1,8 +1,8 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE PackageImports #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Primitives where
 
@@ -12,7 +12,6 @@ import Codec.Picture
 import Data.ByteString.Internal
 import Data.Maybe
 import Data.Yaml
-import "linear" Linear.Metric
 import Test.Tasty
 import Test.Tasty.HUnit
   ( assertBool
@@ -22,6 +21,7 @@ import Test.Tasty.HUnit
   , (@?)
   )
 import Test.Tasty.QuickCheck
+import "linear" Linear.Metric
 
 import Data.Color
 import Data.Ray
@@ -81,8 +81,7 @@ sphereTests =
                     expected = V3 1 0 (-1)
                  in maybe
                       (assertFailure "Expected off-center hit")
-                      ( assertBool "Hit point mismatch" . nearZero . subtract expected . (.point) . fst
-                      )
+                      (assertBool "Hit point mismatch" . nearZero . subtract expected . (.point) . fst)
                       (sphere ray 0 (1 / 0))
             , testCase "Ray from inside sphere points outward" $
                 let ray = Ray (V3 0 0 0) (V3 0 0 1)

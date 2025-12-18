@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE NoFieldSelectors #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
@@ -10,58 +11,51 @@ import Codec.Picture
   , Pixel (pixelAt)
   , PixelRGBF (..)
   )
-import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
+import Control.DeepSeq (NFData)
+import Data.Aeson
+import Data.Color (Color (..))
 import Data.Fixed (mod')
 import Data.Map (Map, (!?))
 import Data.Maybe (fromMaybe)
+import Linear
 import GHC.Generics (Generic)
-import Linear.Metric (Metric (dot))
-
-import Data.Color (Color (..))
+import Lime.Context
 import Lime.Internal.Hit (HitData (HitData, coords, normal, point))
 import Lime.Internal.Utils (prettyError, worldParse)
-import Linear (V3 (..))
 
--- | A texture is just represented as a function that takes information about
--- the intersection and gives the color of the point of intersection
--- (not the pixel).
 type Texture = HitData -> Color Double
 
-data WorldTexture
+data TextureNode
   = SolidColor
       { color :: !(Color Double)
       }
   | Checkered
-      { scale :: !Double
-      , texture1 :: !WorldTexture
-      , texture2 :: !WorldTexture
+      { scale :: !Float
+      , texture1 :: !TextureNode
+      , texture2 :: !TextureNode
       }
   | ImageTexture
       { image :: !String
-      , style :: !TextureFillStyle
+      , style :: !FillStyle
       }
-  | NormalMap | UVMap
+  | NormalMap
+  | UVMap
   deriving (Show, Generic, Eq)
 
-data TextureFillStyle = Stretch | Repeat {scale :: !Double}
+instance NFData TextureNode
+instance NFData FillStyle
+
+data FillStyle = Stretch | Repeat {scale :: !Double}
   deriving (Show, Generic, Eq)
 
-instance FromJSON TextureFillStyle where
-  parseJSON :: Value -> Parser TextureFillStyle
+instance FromJSON FillStyle where
   parseJSON = worldParse
 
-instance FromJSON WorldTexture where
-  parseJSON :: Value -> Parser WorldTexture
+instance FromJSON TextureNode where
   parseJSON = worldParse
 
-texture :: Map String (Image PixelRGBF) -> WorldTexture -> Texture
--------------------------------------------------------------------------------
--- Solid Texture
--------------------------------------------------------------------------------
+texture :: RenderCtx -> TextureNode -> Texture
 texture _ (SolidColor color) _ = color
--------------------------------------------------------------------------------
--- Checkered Texture
--------------------------------------------------------------------------------
 {-
 [Alternate implementation]
 texture ts (Checkered k t1 t2) hit@(HitData {point, coords}) =
@@ -69,29 +63,27 @@ texture ts (Checkered k t1 t2) hit@(HitData {point, coords}) =
   where
     (V3 sx sy sz) = sin . (k *) <$> point
 -}
-texture ts (Checkered k t1 t2) hit@(HitData {point}) =
+texture ctx (Checkered k t1 t2) hit@(HitData {point}) =
   texture
-    ts
-    (if even ((floor . (1 / k *) <$> point) `dot` pure 1) then t1 else t2)
+    ctx
+    ( if even (let (V3 qx qy qz) = ((1 / k) *^ point) in floor qx + floor qy + floor qz)
+        then t1
+        else t2
+    )
     hit
--------------------------------------------------------------------------------
--- Image Texture
--------------------------------------------------------------------------------
-texture ts (ImageTexture key style) HitData {coords = (u, v)} = case style of
+texture ctx (ImageTexture key style) HitData {coords = (u, v)} = case style of
   Stretch -> pixel (pixelAt img (floor i) (floor j))
   Repeat s ->
     let wrap q = floor $ q `mod'` fromIntegral (imageWidth img)
-     in pixel (pixelAt img (wrap (i * s)) (wrap (j * s)))
+     in pixel (pixelAt img (wrap (i * realToFrac s)) (wrap (j * realToFrac s)))
  where
   img =
-    fromMaybe (prettyError $ "Texture `" ++ key ++ "` not defined") $ ts !? key
+    fromMaybe (prettyError $ "Texture `" ++ key ++ "` not defined") $
+      ctx.textures !? key
   i = u * fromIntegral (imageWidth img)
   j = (1 - v) * fromIntegral (imageHeight img)
   pixel (PixelRGBF r g b) = realToFrac <$> Color r g b
--------------------------------------------------------------------------------
--- Normal Mapped Texture
--------------------------------------------------------------------------------
-texture _ NormalMap (HitData {normal = V3 r g b}) =
-  (* 0.5) . (+ 1) <$> Color r g b
-texture _ UVMap (HitData {coords=(u, v)}) = Color u 0 v
--------------------------------------------------------------------------------
+texture _ NormalMap (HitData {normal}) =
+  (* 0.5) . (+ 1)
+    <$> let (V3 r g b) = normal in Color (realToFrac r) (realToFrac g) (realToFrac b)
+texture _ UVMap (HitData {coords = (u, v)}) = Color (realToFrac u) 0 (realToFrac v)
