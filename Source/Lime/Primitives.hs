@@ -10,7 +10,7 @@
 module Lime.Primitives where
 
 import Control.Applicative (liftA3)
-import Control.DeepSeq (NFData (..))
+import Control.DeepSeq (NFData (..), force)
 import Control.Lens ((^.), _Unwrapped')
 import Control.Monad (guard)
 import Data.Aeson.Types
@@ -35,15 +35,17 @@ import Lime.Textures (TextureNode (SolidColor))
 import Linear
 import Linear.Transform
 
-type Primitive = Ray -> Float -> Float -> Maybe (HitData, Material)
+type Primitive = Ray -> Double -> Double -> Maybe (HitData, Material)
 
 data Geometry
   = Sphere
   | Plane
   | Circle
   | Quad
-  | Triangle !(V3 (V3 Float)) !(V3 (V3 Float))
+  | Triangle !(V3 (V3 Double)) !(V3 (V3 Double)) !(V3 (V2 Double))
   deriving (Show, Eq, Generic)
+
+instance FromJSON (V2 Double)
 
 instance FromJSON Geometry where
   parseJSON :: Value -> Parser Geometry
@@ -57,9 +59,9 @@ data Shape = Shape
   deriving (Show, Generic, Eq)
 
 data Mesh = Mesh
-  { path :: String
-  , transform :: [Transform]
-  , material :: MaterialNode
+  { path :: !String
+  , transform :: ![Transform]
+  , material :: !MaterialNode
   }
   deriving (Show, Eq, Generic)
 
@@ -76,14 +78,14 @@ instance NFData Geometry
 instance NFData Shape
 
 data AABB = AABB
-  { lo :: {-# UNPACK #-} !(V3 Float)
-  , hi :: {-# UNPACK #-} !(V3 Float)
+  { lo :: {-# UNPACK #-} !(V3 Double)
+  , hi :: {-# UNPACK #-} !(V3 Double)
   }
   deriving (Show, Generic)
 
 data BVH
-  = BVHLeaf Primitive !AABB
-  | BVHNode !AABB BVH BVH
+  = BVHLeaf !Primitive {-# UNPACK #-} !AABB
+  | BVHNode {-# UNPACK #-} !AABB !BVH !BVH
 
 instance NFData AABB
 
@@ -115,7 +117,7 @@ aabbColor (AABB (V3 lox loy loz) (V3 hix hiy hiz)) =
     h = abs $ ((hix - lox) + (hiy - loy) + (hiz - loz)) `mod'` (2 * pi)
     (r, g, b) = hsv2rgb (h, 1, 1)
    in
-    realToFrac <$> Color r g b
+    Color r g b
 
 wireframe :: AABB -> Primitive
 wireframe bo@(AABB (V3 lox loy loz) (V3 hix hiy hiz)) ray@(Ray o d) _ _ =
@@ -175,7 +177,7 @@ traverseBVH (BVHLeaf prim box@(AABB lo hi)) = prim
 --           hs -> Just $ minimumBy (compare `on` (\(q, _) -> q.param)) hs
 traverseBVH (BVHNode box@(AABB lo hi) left right) =
   {-# SCC "slabClosure" #-}
-  \ray@(Ray o d) (realToFrac -> tMin) (realToFrac -> tMax) ->
+  \ray@(Ray o d) tMin tMax ->
     let t1 = (/) <$> (lo ^-^ o) <*> d
         t2 = (/) <$> (hi ^-^ o) <*> d
         tmin = maximum $ min <$> t1 <*> t2
@@ -234,11 +236,11 @@ buildBVH ctx items =
           (AABB nodeMin nodeMax) = unionAABB leftB rightB
        in BVHNode (AABB bmin bmax) leftBVH rightBVH
 
-centroid :: AABB -> V3 Float
+centroid :: AABB -> V3 Double
 centroid (AABB lo hi) = (lo ^+^ hi) ^/ 2
 
 -- return index of longest axis: 0 -> x, 1 -> y, 2 -> z
-longAxis :: V3 Float -> Int
+longAxis :: V3 Double -> Int
 longAxis (V3 x y z)
   | x >= y && x >= z = 0
   | y >= x && y >= z = 1
@@ -262,15 +264,15 @@ shapeBounds Shape {..} =
 objectBBox :: Geometry -> AABB
 objectBBox = \case
   Sphere -> AABB (V3 (-1) (-1) (-1)) (V3 1 1 1)
-  Quad -> AABB (V3 (-0.5) (-1e-3) (-0.5)) (V3 0.5 1e-3 0.5)
-  Circle -> AABB (V3 (-1) (-1e-3) (-1)) (V3 1 1e-3 1)
-  Plane -> AABB (V3 (-1e6) (-1e-3) (-1e6)) (V3 1e6 1e-3 1e6)
-  Triangle vertices@(V3 v1 v2 v3) _ ->
+  Quad -> AABB (V3 (-0.5) (-1e-2) (-0.5)) (V3 0.5 1e-2 0.5)
+  Circle -> AABB (V3 (-1) (-1e-2) (-1)) (V3 1 1e-2 1)
+  Plane -> AABB (V3 (-1e6) (-1e-2) (-1e6)) (V3 1e6 1e-2 1e6)
+  Triangle (V3 v1 v2 v3) _ _ ->
     let lo = liftA3 (\x1 x2 x3 -> minimum [x1, x2, x3]) v1 v2 v3
         hi = liftA3 (\x1 x2 x3 -> maximum [x1, x2, x3]) v1 v2 v3
      in AABB lo hi
 
-transformAABB :: M44 Float -> AABB -> AABB
+transformAABB :: M44 Double -> AABB -> AABB
 transformAABB m (AABB (V3 minx miny minz) (V3 maxx maxy maxz)) =
   let corners =
         [ V3 x y z
@@ -288,11 +290,11 @@ transformAABB m (AABB (V3 minx miny minz) (V3 maxx maxy maxz)) =
 
 primitive :: RenderCtx -> Shape -> Primitive
 primitive ctx shape =
-  let tf = foldr ((!*!) . mkTransform) identity shape.transform
-      itf = inv44 tf
-      mat = material ctx shape.material
+  let tf = force $ foldr ((!*!) . mkTransform) identity shape.transform
+      itf = force $ inv44 tf
+      mat = force $ material ctx shape.material
    in {-# SCC "primitiveClosure" #-}
-      \ray'@(rayTransform itf -> ray@(Ray o d)) (realToFrac -> tMin) (realToFrac -> tMax) -> case shape.geometry of
+      \ray'@(rayTransform itf -> ray@(Ray o d)) tMin tMax -> case shape.geometry of
         Sphere ->
           let dat q =
                 HitData
@@ -328,73 +330,64 @@ primitive ctx shape =
                 dat' = dat {coords = ((u + 1) / 2, (v + 1) / 2)}
              in guard (norm p <= 1)
                   >> pure (dat', mat dat' ray)
-        Triangle (V3 v1@(V3 ax ay az) v2@(V3 bx by bz) v3@(V3 cx cy cz)) (V3 n1 n2 n3) ->
-          let (V3 ox oy oz) = o
-              (V3 dx dy dz) = d
-              a =
-                V3
-                  (V3 (ax - bx) (ax - cx) dx)
-                  (V3 (ay - by) (ay - cy) dy)
-                  (V3 (az - bz) (az - cz) dz)
-              b = V3 (V1 $ ax - ox) (V1 $ ay - oy) (V1 $ az - oz)
-              (V3 (V1 β) (V1 γ) (V1 t)) = inv33 a !*! b
-              α = 1 - β - γ
-              n0 =
-                normalize $
-                  α
-                    *^ n1
-                    ^+^ β
-                    *^ n2
-                    ^+^ γ
-                    *^ n3
-              getN n =
-                normalize $ transform vector (transpose $ inv44 tf) n
-              en = getN n0
-              dat =
-                HitData
-                  (if en `dot` (transform vector tf d) > 0 then negated en else en) -- normal
-                  (transform point tf (rayAt ray t))
-                  t
-                  (β, γ)
-           in if
-                | det33 a == 0 -> Nothing
-                | t <= tMin || t >= tMax -> Nothing
-                | β >= 0 && γ >= 0 && β + γ <= 1 -> Just (dat, mat dat ray')
-                | otherwise -> Nothing
+        Triangle
+          (V3 (V3 ax ay az) (V3 bx by bz) (V3 cx cy cz))
+          (V3 n1 n2 n3)
+          (V3 t1 t2 t3) ->
+            let (V3 ox oy oz) = o
+                (V3 dx dy dz) = d
+                a =
+                  V3
+                    (V3 (ax - bx) (ax - cx) dx)
+                    (V3 (ay - by) (ay - cy) dy)
+                    (V3 (az - bz) (az - cz) dz)
+                b = V3 (V1 $ ax - ox) (V1 $ ay - oy) (V1 $ az - oz)
+                (V3 (V1 β) (V1 γ) (V1 t)) = inv33 a !*! b
+                α = 1 - β - γ
+                n0 = normalize $ (α *^ n1) ^+^ (β *^ n2) ^+^ (γ *^ n3)
+                getN n = normalize $ transform vector (transpose $ inv44 tf) n
+                en = getN n0
+                uv = (α *^ t1) ^+^ (β *^ t2) ^+^ (γ *^ t3)
+                dat =
+                  HitData
+                    (if en `dot` (transform vector tf d) > 0 then negated en else en) -- normal
+                    (transform point tf (rayAt ray t))
+                    t
+                    ((\(V2 q1 q2) -> (q1, q2)) uv)
+             in if
+                  | det33 a == 0 -> Nothing
+                  | t <= tMin || t >= tMax -> Nothing
+                  | β >= 0 && γ >= 0 && β + γ <= 1 -> Just (dat, mat dat ray')
+                  | otherwise -> Nothing
  where
   planarIntersection tf ray@(Ray o d) tMin tMax =
     let denom = V3 0 1 0 `dot` d
         t = (V3 0 1 0 `dot` (V3 0 0 0 ^-^ o)) / denom
-        getN = normalize $ transform point (transpose $ inv44 tf) (V3 0 1 0)
+        en = normalize $ transform vector (transpose $ inv44 tf) (V3 0 1 0)
      in if
-          | denom == 0 -> Nothing
+          | abs denom <= 1e-6 -> Nothing
           | t < tMin || t > tMax -> Nothing
           | otherwise ->
               Just $
                 HitData
-                  getN
+                  (if en `dot` (transform vector tf d) > 0 then negated en else en)
                   (transform point tf (rayAt ray t))
                   t
                   (prettyError "Tried to evaluate uv for infinite surface")
 
 triangulate :: Data.Wavefront.Object -> [Geometry]
-triangulate (Data.Wavefront.Object n vs ns uvs fs) =
+triangulate (Data.Wavefront.Object n vs ns ts fs) =
   map
-    ( \[ (FaceRef vi1 _ (Just ni1))
-         , (FaceRef vi2 _ (Just ni2))
-         , (FaceRef vi3 _ (Just ni3))
-         ] ->
-          Triangle
-            ( V3
-                (vs !! (vi1 - 1))
-                (vs !! (vi2 - 1))
-                (vs !! (vi3 - 1))
-            )
-            ( V3
-                (ns !! (ni1 - 1))
-                (ns !! (ni2 - 1))
-                (ns !! (ni3 - 1))
-            )
+    ( \case
+        [ FaceRef vi1 (Just ti1) (Just ni1)
+          , FaceRef vi2 (Just ti2) (Just ni2)
+          , FaceRef vi3 (Just ti3) (Just ni3)
+          ] ->
+            Triangle
+              (V3 (vs !! (vi1 - 1)) (vs !! (vi2 - 1)) (vs !! (vi3 - 1)))
+              (V3 (ns !! (ni1 - 1)) (ns !! (ni2 - 1)) (ns !! (ni3 - 1)))
+              (V3 (ts !! (ti1 - 1)) (ts !! (ti2 - 1)) (ts !! (ti3 - 1)))
+        _ -> error "Invalid mesh (possibly not triangulated)"
     )
     fs
 

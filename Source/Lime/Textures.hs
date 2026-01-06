@@ -17,11 +17,11 @@ import Data.Color (Color (..))
 import Data.Fixed (mod')
 import Data.Map (Map, (!?))
 import Data.Maybe (fromMaybe)
-import Linear
 import GHC.Generics (Generic)
 import Lime.Context
 import Lime.Internal.Hit (HitData (HitData, coords, normal, point))
 import Lime.Internal.Utils (prettyError, worldParse)
+import Linear
 
 type Texture = HitData -> Color Double
 
@@ -30,7 +30,7 @@ data TextureNode
       { color :: !(Color Double)
       }
   | Checkered
-      { scale :: !Float
+      { scale :: !Double
       , texture1 :: !TextureNode
       , texture2 :: !TextureNode
       }

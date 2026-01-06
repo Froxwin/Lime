@@ -16,7 +16,10 @@ import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Maybe
 import Data.Ray
+import Data.Vector.Strict (Vector)
+import Data.Vector.Strict qualified as V
 import Data.Wavefront qualified
+import Debug.Trace qualified
 import GHC.Generics
 import Lime.Context
 import Lime.Internal.Hit
@@ -30,44 +33,61 @@ integrate
   :: RenderCtx
   -> Ray
   -> BVH
-  -> V3 Float
+  -> StdGen
   -> Int
   -> Texture
   -> (Maybe HitData, Color Double)
-integrate ctx ray bvh g depth background = (fst <$> maybeHit, rayColor ctx ray bvh g depth background)
+integrate ctx ray bvh g depth background =
+  ( fst <$> maybeHit
+  , let a = rayColor ctx ray bvh g depth background in a
+  )
  where
-  maybeHit = traverseBVH bvh ray 1.0e-3 (1 / 0)
+  maybeHit = traverseBVH bvh ray 1e-9 1e9
+
+randomInUnitSphere :: StdGen -> (V3 Double, StdGen)
+randomInUnitSphere g =
+  let (x, g1) = randomR (-1, 1) g
+      (y, g2) = randomR (-1, 1) g1
+      (z, g3) = randomR (-1, 1) g2
+      v = V3 x y z
+   in if quadrance v >= 1 || quadrance v <= 1e-6
+        then randomInUnitSphere g3
+        else (v, g3)
 
 rayColor
   :: RenderCtx
   -> Ray
   -> BVH
-  -> V3 Float
+  -> StdGen
   -> Int
   -> Texture
   -> Color Double
 rayColor ctx ray@(Ray _ dir) bvh g depth background
-  | depth == 0 = pure 0
+  | depth == 0 = Color 0 0 1
   | isNothing maybeHit =
-      background
-        ( HitData
-            { coords =
-                (\(V3 px py pz) -> ((atan2 (-pz) px + pi) / (2 * pi), acos (-py) / pi)) dir
-            , point = dir
-            , normal = error "Tried to access skybox normal"
-            , param = error "Tried to access skybox hit"
-            }
-        )
+      background $
+        HitData
+          { coords =
+              (\(V3 px py pz) -> ((atan2 (-pz) px + pi) / (2 * pi), acos (-py) / pi)) dir
+          , point = dir
+          , normal = error "Tried to access skybox normal"
+          , param = error "Tried to access skybox hit"
+          }
   | otherwise =
       maybe
         color
         (getColorProduct . (ColorProduct color <>) . ColorProduct)
         reflectedColor
  where
-  reflectedColor = (\t -> rayColor ctx t bvh g (depth - 1) background) <$> reflected
-  (color, reflected) = material g
+  reflectedColor = (\t -> rayColor ctx t bvh g' (depth - 1) background) <$> reflected
+  -- (g0, g') = split g
+  -- rvec = head $ filter ((<= 1) . norm) $ randomRs ((V3 (-1) (-1) (-1)), (V3 1 1 1)) g0
+  (rvec, g') = randomInUnitSphere g
+  (color, reflected) = material (normalize rvec)
   (_, material) = fromJust maybeHit
-  maybeHit = traverseBVH bvh ray 1.0e-3 (1 / 0)
+  maybeHit = traverseBVH bvh ray 1e-9 1e9
+
+parVectorChunk j s v = parListChunk j s $ V.toList v
 
 render
   :: SceneConfig
@@ -75,7 +95,7 @@ render
   -> RenderCtx
   -> [Lime.Camera.Object]
   -> StdGen
-  -> [Color Double]
+  -> Vector (Color Double)
 render (SceneConfig {..}) (Camera {..}) ctx world gen =
   let primitives =
         force $
@@ -91,8 +111,7 @@ render (SceneConfig {..}) (Camera {..}) ctx world gen =
       !bvh = force $ constructBVH ctx primitives
       bg = force $ texture ctx backgroundTexture
       pixelColor rgen (ui, vi) =
-        ( gen'
-        , ( \(hs, cs) ->
+        ( ( \(hs, cs) ->
               let c =
                     getColorSum $
                       mconcat $
@@ -126,12 +145,13 @@ render (SceneConfig {..}) (Camera {..}) ctx world gen =
         (gen1, diskGen) = split gen0
         (gen', scatterGen) = split gen1
 
-        sampleSquare :: [V2 Float]
+        sampleSquare :: [V2 Double]
         sampleSquare =
-          take (round samplesPerPixel) $
-            randomRs (V2 (-0.5) (-0.5), V2 0.5 0.5) sampleGen
+          force $
+            take (round samplesPerPixel) $
+              randomRs (V2 (-0.5) (-0.5), V2 0.5 0.5) sampleGen
 
-        bokeh :: V2 Float -> Bool
+        bokeh :: V2 Double -> Bool
         bokeh (V2 x y) = ((x' ^ 2) + (y' ^ 2) - 0.1) ^ 3 <= (x' ^ 2) * (y' ^ 3)
          where
           x' = a * x
@@ -159,30 +179,39 @@ render (SceneConfig {..}) (Camera {..}) ctx world gen =
                   _ -> False
            in ratio > 0.005 || depthJump
 
-        sampleDisk :: [V2 Float]
+        sampleDisk :: [V2 Double]
         sampleDisk =
-          take (round samplesPerPixel) $
-            filter bokeh $
-              randomRs (V2 (-0.5) (-0.5), V2 0.5 0.5) diskGen
-
-        randomVecs :: [V3 Float]
-        randomVecs =
-          map normalize $
+          force $
             take (round samplesPerPixel) $
-              randomRs (V3 (-1) (-1) (-1), V3 1 1 1) scatterGen
+              filter bokeh $
+                randomRs (V2 (-0.5) (-0.5), V2 0.5 0.5) diskGen
 
-        ss = zip3 sampleSquare sampleDisk randomVecs
+        randomVecs :: [V3 Double]
+        randomVecs =
+          force $
+            map normalize $
+              take (round samplesPerPixel) $
+                randomRs (V3 (-1) (-1) (-1), V3 1 1 1) scatterGen
 
+        gs =
+          take (round samplesPerPixel) $
+            unfoldr (\g0 -> let (g1, g2) = split g0 in Just (g1, g2)) scatterGen
+
+        ss = force $ zip3 sampleSquare sampleDisk gs -- randomVecs
       jobs = max 1 ((width * height) `div` (16 * 20))
       coords =
-        [ (i, j)
-        | j <- reverse $ scanline $ fromIntegral height
-        , i <- scanline $ fromIntegral width
-        ]
+        V.fromList $
+          force $
+            [ (i, j)
+            | j <- reverse $ scanline $ fromIntegral height
+            , i <- scanline $ fromIntegral width
+            ]
+      gens = V.fromList $ force $ take (length coords) $ unfoldr (Just . split) gen
    in bvh
-        `deepseq` withStrategy
+        `deepseq` V.fromList
+        $ withStrategy
           (parListChunk jobs rdeepseq)
-          (snd $ mapAccumL pixelColor gen coords)
+        $ V.toList (V.zipWith pixelColor gens coords)
  where
   scanline q = map (/ q) [0 .. q - 1]
 
@@ -207,9 +236,6 @@ render (SceneConfig {..}) (Camera {..}) ctx world gen =
   diskU = diskRadius *^ u
   diskV = diskRadius *^ v
 
--- tosimd2 (V2 x y) = pack (x, y)
--- tosimd3 (V3 x y z) = pack (x, y, z)
-
 convertToPreview :: Scene -> Scene
 convertToPreview scene =
   scene
@@ -224,12 +250,12 @@ convertToPreview scene =
     }
 
 data Camera = Camera
-  { position :: !(V3 Float)
-  , lookingAt :: !(V3 Float)
-  , focalLength :: !Float
-  , fieldOfView :: !Float
-  , upwardVector :: !(V3 Float)
-  , defocusAngle :: !Float
+  { position :: !(V3 Double)
+  , lookingAt :: !(V3 Double)
+  , focalLength :: !Double
+  , fieldOfView :: !Double
+  , upwardVector :: !(V3 Double)
+  , defocusAngle :: !Double
   , backgroundTexture :: !TextureNode
   }
   deriving (Show, Generic, Eq)

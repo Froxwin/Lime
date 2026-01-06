@@ -5,10 +5,10 @@ module Linear.Optics where
 import Linear
 
 -- | Reflect a vector wrt to the surface normal. The normal should be normalized
-reflect :: V3 Float -> V3 Float -> V3 Float
+reflect :: V3 Double -> V3 Double -> V3 Double
 reflect v (normalize -> n) = v ^-^ ((2 * (v `dot` n)) *^ n)
 
-refract :: V3 Float -> V3 Float -> Float -> V3 Float
+refract :: V3 Double -> V3 Double -> Double -> V3 Double
 refract v n mu =
   if k < 0
     then error "cannot refract"

@@ -20,6 +20,8 @@ benchmarks: True
 -- tests: True
 test-show-details: direct
 
+allow-newer: gltf-codec:aeson
+                   
 -- package *
 --   coverage: True
 --   library-coverage: True

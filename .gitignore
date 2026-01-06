@@ -6,5 +6,6 @@ temp*
 /sandbox
 .vscode
 out.*
+out/
 .direnv
 build/

@@ -17,7 +17,7 @@ maintainer:      56168224+Froxwin@users.noreply.github.com
 category:        Graphics
 build-type:      Simple
 extra-doc-files: README.md
-data-files:      build/kernel.ptx
+-- data-files:      build/kernel.ptx
 
 source-repository head
   type:     git
@@ -47,6 +47,7 @@ common library-depends
     , ghc-prim
     , criterion
     , primitive
+    , gltf-codec
 
 flag warn-all
   description: Enables warnings that are turned off.
@@ -110,6 +111,7 @@ library
     Data.Ray
     Data.Wavefront
     Data.Vec
+    Data.Scene
     Lime.Context
     Lime.Camera
     --Lime.Device
@@ -134,26 +136,44 @@ executable Lime
     , optparse-applicative
     , yaml
 
-test-suite Alkali
-  import:         executable, library-depends
-  type:           exitcode-stdio-1.0
+executable Lime-gui
+  import:         executable
+  hs-source-dirs: Gui
   main-is:        Main.hs
-  -- other-modules:
-  --   Optics
-  --   Primitives
-  --   Transform
-
-  hs-source-dirs: Test
   build-depends:
-    , bytestring
-    , tasty
-    , tasty-hunit
-    , tasty-quickcheck
+    , containers
+    , hslua
+    , optparse-applicative
     , yaml
+    , sdl2
+    , JuicyPixels
+    , vector
+    , deepseq
+    , random
+    , containers
+    , filepath
+    , bytestring
 
-benchmark Halogen
-  import: executable, library-depends
-  type:           exitcode-stdio-1.0
-  main-is:        Main.hs
-  hs-source-dirs: Benchmark
-  build-depends: criterion, random
+-- test-suite Alkali
+--   import:         executable, library-depends
+--   type:           exitcode-stdio-1.0
+--   main-is:        Main.hs
+--   -- other-modules:
+--   --   Optics
+--   --   Primitives
+--   --   Transform
+
+--   hs-source-dirs: Test
+--   build-depends:
+--     , bytestring
+--     , tasty
+--     , tasty-hunit
+--     , tasty-quickcheck
+--     , yaml
+
+-- benchmark Halogen
+--   import: executable, library-depends
+--   type:           exitcode-stdio-1.0
+--   main-is:        Main.hs
+--   hs-source-dirs: Benchmark
+--   build-depends: criterion, random

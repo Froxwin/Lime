@@ -131,7 +131,7 @@ main = do
   case getExt i of
     ".yaml" ->
       decodeFileEither i
-        >>= ignite o p t m f
+        >>= ignite o p t m
           . either
             ( errorWithoutStackTrace
                 . ("\ESC[1;31m" <>)
@@ -146,7 +146,7 @@ main = do
             >> (getglobal "scene" :: LuaE Exception Type)
             >> peek top
         )
-        >>= ignite o p t m f
+        >>= ignite o p t m
     ".anim.lua" -> do
       mn <- newManager
       run
@@ -157,7 +157,7 @@ main = do
         )
         >>= mapM_
           ( \(j, s) ->
-              forkManaged mn (ignite (o <> "/" <> show j <> ".png") p t m f s)
+              forkManaged mn (ignite (o <> "/" <> show j <> ".png") p t m s)
           )
           . (\xs -> zip [1 .. length xs] xs)
       waitAll mn

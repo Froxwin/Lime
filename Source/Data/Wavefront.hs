@@ -23,7 +23,7 @@ sc = L.space B.space1 (L.skipLineComment "#") (L.skipBlockComment "{=" "=}")
 float :: Parser Double
 float = L.signed sc L.float
 
-vertexParser :: Parser (V3 Float)
+vertexParser :: Parser (V3 Double)
 vertexParser = do
   _ <- B.string "v "
   vec <-
@@ -34,7 +34,7 @@ vertexParser = do
   w <- P.option 1.0 (B.string " " *> float >>= (pure . realToFrac))
   pure $ (/ w) <$> vec
 
-normalParser :: Parser (V3 Float)
+normalParser :: Parser (V3 Double)
 normalParser = do
   _ <- B.string "vn"
   V3
@@ -42,7 +42,7 @@ normalParser = do
     <*> (B.string " " *> float >>= (pure . realToFrac))
     <*> (B.string " " *> float >>= (pure . realToFrac))
 
-uvParser :: Parser (V2 Float)
+uvParser :: Parser (V2 Double)
 uvParser = do
   _ <- B.string "vt"
   (V3 u v w) <-
@@ -50,9 +50,10 @@ uvParser = do
       <$> (B.string " " *> float >>= (pure . realToFrac))
       <*> P.option 0.0 (B.string " " *> float >>= (pure . realToFrac))
       <*> P.option 0.0 (B.string " " *> float >>= (pure . realToFrac))
-  if u > 1.0 || v > 1.0
-    then fail "Texture coordinates out of bounds"
-    else pure $ V2 u v
+  -- if u > 1.0 || v > 1.0
+  --   then fail "Texture coordinates out of bounds"
+  --   else
+  pure $ V2 u v
 
 data FaceRef = FaceRef
   { vcIndex :: Int
@@ -79,9 +80,9 @@ faceParser =
 
 data Object = Object
   { name :: ByteString
-  , verticies :: [V3 Float]
-  , normals :: [V3 Float]
-  , uvs :: [V2 Float]
+  , verticies :: [V3 Double]
+  , normals :: [V3 Double]
+  , uvs :: [V2 Double]
   , faces :: [Face]
   }
   deriving Show
@@ -93,9 +94,9 @@ smoothingParser = do
   pure ()
 
 data ObjEntry
-  = EntryV (V3 Float)
-  | EntryN (V3 Float)
-  | EntryUV (V2 Float)
+  = EntryV (V3 Double)
+  | EntryN (V3 Double)
+  | EntryUV (V2 Double)
   | EntryF Face
 
 entryParser =
@@ -106,7 +107,7 @@ entryParser =
     <$> faceParser
 
 partitionEntries
-  :: [ObjEntry] -> ([V3 Float], [V3 Float], [V2 Float], [Face])
+  :: [ObjEntry] -> ([V3 Double], [V3 Double], [V2 Double], [Face])
 partitionEntries = foldr go ([], [], [], [])
  where
   go e (vs, ns, uvs, fs) = case e of

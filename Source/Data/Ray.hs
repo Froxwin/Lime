@@ -6,17 +6,17 @@ import Linear.V3
 import Linear.Vector
 
 data Ray = Ray
-  { rayOrigin :: {-# UNPACK #-} !(V3 Float)
-  , rayDirection :: {-# UNPACK #-} !(V3 Float)
+  { rayOrigin :: {-# UNPACK #-} !(V3 Double)
+  , rayDirection :: {-# UNPACK #-} !(V3 Double)
   }
   deriving Show
 
-rayAt :: Ray -> Float -> V3 Float
+rayAt :: Ray -> Double -> V3 Double
 rayAt (Ray o d) t = o ^+^ (t *^ d)
 {-# INLINE rayAt #-}
 
 -- | Performs the inverse of a list of transformations on a ray
-rayTransform :: M44 Float -> Ray -> Ray
+rayTransform :: M44 Double -> Ray -> Ray
 rayTransform itf (Ray o d) = Ray (transform point itf o) (transform vector itf d)
 {-# INLINE rayTransform #-}
 

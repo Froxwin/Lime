@@ -28,22 +28,23 @@ data MaterialNode
       { texture :: !TextureNode
       }
   | Metal
-      { fuzz :: !Float
+      { fuzz :: !Double
       , texture :: !TextureNode
       }
   | Dielectric
-      { ior :: !Float
+      { ior :: !Double
       }
   | Emissive
       { strength :: !Double
       , texture :: !TextureNode
       }
   | Toon
-      { texture :: !TextureNode
+      { steps :: !Double
+      , texture :: !TextureNode
       }
   | Subsurface
       { texture :: !TextureNode
-      , k :: !Float
+      , k :: !Double
       }
   deriving (Show, Generic, Eq)
 
@@ -57,8 +58,11 @@ material :: RenderCtx -> MaterialNode -> HitData -> Ray -> Material
 -- Lambertian Material
 -------------------------------------------------------------------------------
 material ctx (Lambertian tex) hit@(HitData {normal, point}) _ rvec =
-  (texture ctx tex hit, Just $ Ray point (normalize (v ^+^ normal)))
+  ( texture ctx tex hit
+  , Just $ Ray point dir
+  )
  where
+  dir = normalize (v ^+^ normal)
   v = if rvec `dot` normal > 0 then rvec else negated rvec
 -------------------------------------------------------------------------------
 -- Metallic Material
@@ -86,7 +90,7 @@ material _ (Dielectric i) (HitData {normal = n, point}) (Ray _ v) rand =
   cosi = min 1 (-(v' `dot` n'))
   k = 1 - ratio * ratio * (1 - cosi * cosi)
 
-  schlick :: Float -> Float -> Float
+  schlick :: Double -> Double -> Double
   schlick cosi ior =
     r0 + (1 - r0) * (1 - cosi) ^ 5
    where
@@ -115,11 +119,11 @@ material ctx (Emissive strength tex) hit _ _ = ((*) strength <$> texture ctx tex
 --------------------------------------------------------------------------------
 -- Toon Material
 --------------------------------------------------------------------------------
-material ctx (Toon tex) hit@(HitData n p _ _) r@(Ray o d) rvec = (c', Just $ Ray p (normalize (toonNormal n v)))
+material ctx (Toon k tex) hit@(HitData n p _ _) r@(Ray o d) rvec = (c', Just $ Ray p (normalize (toonNormal n v)))
  where
   diffuse = realToFrac $ quantize $ max 0 $ abs (n `dot` d)
   c' = scale diffuse (texture ctx tex hit)
-  quantize x = let k = 4 in fromIntegral (floor (x * k)) / k
+  quantize x = fromIntegral (floor (x * k)) / k
   v = if rvec `dot` n > 0 then rvec else negated rvec
   toonNormal n v
     | nd > 0.66 = n

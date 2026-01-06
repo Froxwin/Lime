@@ -13,13 +13,13 @@ where
 
 import Codec.Picture
 import Control.DeepSeq (deepseq)
-import Control.Lens (Field10 (_10))
 import Data.Color (Color (Color), scale)
 import Data.Fixed (mod')
 import Data.List (minimumBy, nub, sort, (\\))
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Ord (comparing)
+import Data.Vector.Strict qualified as V
 import Data.Wavefront (loadWavefront)
 import Lime.Camera
 import Lime.Context
@@ -56,11 +56,9 @@ loadAsset dir f e =
               "Asset loading failed:\n"
                 ++ concatMap (\q -> e ++ " `" ++ q ++ "` defined twice\n") dups
 
-type Filter = FilePath
-
 ignite
-  :: FilePath -> Bool -> FilePath -> FilePath -> Maybe Filter -> Scene -> IO ()
-ignite output preview texDir modelDir fil rawScene = do
+  :: FilePath -> Bool -> FilePath -> FilePath -> Scene -> IO ()
+ignite output preview texDir modelDir rawScene = do
   let !scene = if preview then convertToPreview rawScene else rawScene
   !texs <-
     M.map
@@ -79,19 +77,21 @@ ignite output preview texDir modelDir fil rawScene = do
   gen <- getStdGen
 
   let !pixelData =
-        map
-          ( ( \(Color r g b) ->
-                PixelRGB8 (round $ r * 255) (round $ g * 255) (round $ b * 255)
+        V.force
+          $ V.map
+            ( ( \(Color r g b) ->
+                  PixelRGB8 (round $ r * 255) (round $ g * 255) (round $ b * 255)
+              )
+                -- . toon
+                . toneMap scene.config.exposure
             )
-              -- . toon
-              . toneMap scene.config.exposure
-          )
           -- \$ denoiseMedian3x3 scene.config.width scene.config.height
+          $ V.force
           $ render scene.config scene.camera (RenderCtx texs objs) scene.world gen
 
   let img =
         generateImage
-          (\x y -> pixelData !! ((scene.config.width * y) + x))
+          (\x y -> pixelData V.! ((scene.config.width * y) + x))
           scene.config.width
           scene.config.height
 

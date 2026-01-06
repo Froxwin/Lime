@@ -18,7 +18,6 @@ module Linear.Transform
   , vector
   ) where
 
-
 import Control.DeepSeq (NFData)
 import Control.Lens ((^.))
 import Data.Aeson.Types (FromJSON (parseJSON), Parser, Value)
@@ -43,19 +42,19 @@ import Linear.V4 (V4 (V4), point, vector)
   so that the order of matrix multiplication is T * R * S
 -}
 data Transform
-  = Translate !(V3 Float)
-  | Scale !(V3 Float)
+  = Translate !(V3 Double)
+  | Scale !(V3 Double)
   | Rotate
-      { axis :: !(V3 Float)
-      , angle :: !Float
+      { axis :: !(V3 Double)
+      , angle :: !Double
       }
-  | Arbitrary !(M44 Float)
+  | Arbitrary !(M44 Double)
   deriving (Show, Eq, Generic, Ord)
 
 instance NFData Transform
 
-instance FromJSON (V4 Float)
-instance FromJSON (M44 Float)
+instance FromJSON (V4 Double)
+instance FromJSON (M44 Double)
 
 instance FromJSON Transform where
   parseJSON :: Value -> Parser Transform
@@ -63,17 +62,17 @@ instance FromJSON Transform where
 
 transform
   , invTransform
-    :: (V3 Float -> V4 Float)
+    :: (V3 Double -> V4 Double)
     -- ^ See 'vector' and 'point'
-    -> M44 Float
-    -> V3 Float
-    -> V3 Float
+    -> M44 Double
+    -> V3 Double
+    -> V3 Double
 transform f tf v = (tf !* f v) ^. _xyz
 invTransform f tf v = (inv44 tf !* f v) ^. _xyz
 {-# INLINE transform #-}
 {-# INLINE invTransform #-}
 
-mkTransform :: Transform -> M44 Float
+mkTransform :: Transform -> M44 Double
 mkTransform (Translate (V3 tx ty tz)) =
   V4 (V4 1 0 0 tx) (V4 0 1 0 ty) (V4 0 0 1 tz) (V4 0 0 0 1)
 mkTransform (Scale (V3 tx ty tz)) =
@@ -83,7 +82,7 @@ mkTransform (Arbitrary m) = m
 {-# INLINE mkTransform #-}
 
 -- | Make a transformation matrix from a foldable container of transformations
-mkTransforms :: Foldable t => t Transform -> M44 Float
+mkTransforms :: Foldable t => t Transform -> M44 Double
 mkTransforms = foldr ((!*!) . mkTransform) identity
 {-# INLINE mkTransforms #-}
 

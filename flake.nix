@@ -16,6 +16,9 @@
             overrides = final.lib.fold final.lib.composeExtensions (old.overrides or (_: _: { })) [
               (final.haskell.lib.packageSourceOverrides { Lime = ./.; })
               (final.haskell.lib.packagesFromDirectory { directory = ./nix; })
+              (self: super: {
+                mkDerivation = args: super.mkDerivation (args // { enableLibraryProfiling = true; });
+              })
             ];
           });
         })
@@ -38,6 +41,7 @@
         cudaPackages.cuda_nvcc
         cudaPackages.cuda_cccl
         clang-tools
+        SDL2
         # llvmPackages_15.llvm
         # llvmPackages_15.clang
       ];
@@ -56,6 +60,7 @@
           nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ tools;
           inherit shellHook;
         });
+
       };
     };
 }
