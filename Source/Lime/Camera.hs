@@ -63,7 +63,7 @@ rayColor
   -> Texture
   -> Color Double
 rayColor ctx ray@(Ray _ dir) bvh g depth background
-  | depth == 0 = Color 0 0 1
+  | depth == 0 = Color 0 0 0
   | isNothing maybeHit =
       background $
         HitData

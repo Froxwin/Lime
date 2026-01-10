@@ -5,7 +5,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoFieldSelectors #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Lime.Primitives where
 
@@ -43,7 +42,20 @@ data Geometry
   | Circle
   | Quad
   | Triangle !(V3 (V3 Double)) !(V3 (V3 Double)) !(V3 (V2 Double))
+  | Metaball {threshold :: !Double, balls :: ![Ball]}
   deriving (Show, Eq, Generic)
+
+data Ball = Ball
+  { center :: !(V3 Double)
+  , weight :: !Double
+  }
+  deriving (Show, Eq, Generic)
+
+instance FromJSON Ball where
+  parseJSON :: Value -> Parser Ball
+  parseJSON = worldParse
+
+instance NFData Ball
 
 instance FromJSON (V2 Double)
 
@@ -90,11 +102,8 @@ data BVH
 instance NFData AABB
 
 instance NFData BVH where
-  rnf (BVHLeaf prim box) =
-    -- do NOT force prim (it's a function)
-    rnf box
-  rnf (BVHNode box left right) =
-    rnf box `seq` rnf left `seq` rnf right
+  rnf (BVHLeaf _ box) = rnf box
+  rnf (BVHNode box left right) = rnf box `seq` rnf left `seq` rnf right
 
 hsv2rgb (h, s, v) = (r + m, g + m, b + m)
  where
@@ -144,7 +153,7 @@ wireframe bo@(AABB (V3 lox loy loz) (V3 hix hiy hiz)) ray@(Ray o d) _ _ =
           kab = (v2 ^-^ v1) `dot` (v2 ^-^ v1)
           tee = ((o' ^-^ o) `dot` en2) / (d `dot` en2)
           dee = HitData undefined p tee undefined
-       in if (sep <= 0.001) && (0 <= kac) && (kac <= kab)
+       in if (sep <= 0.01) && (0 <= kac) && (kac <= kab)
             then
               Just
                 ( dee
@@ -271,6 +280,15 @@ objectBBox = \case
     let lo = liftA3 (\x1 x2 x3 -> minimum [x1, x2, x3]) v1 v2 v3
         hi = liftA3 (\x1 x2 x3 -> maximum [x1, x2, x3]) v1 v2 v3
      in AABB lo hi
+  Metaball th balls ->
+    let ballAABB (Ball c w) =
+          let r = pure $ sqrt (w / th)
+           in AABB (c ^-^ r) (c ^+^ r)
+     in foldr1
+          ( \(AABB lo1 hi1) (AABB lo2 hi2) ->
+              AABB (liftA2 min lo1 lo2) (liftA2 max hi1 hi2)
+          )
+          (map ballAABB balls)
 
 transformAABB :: M44 Double -> AABB -> AABB
 transformAABB m (AABB (V3 minx miny minz) (V3 maxx maxy maxz)) =
@@ -359,6 +377,60 @@ primitive ctx shape =
                   | t <= tMin || t >= tMax -> Nothing
                   | β >= 0 && γ >= 0 && β + γ <= 1 -> Just (dat, mat dat ray')
                   | otherwise -> Nothing
+        Metaball threshold balls ->
+          let
+            field p = sum [w / quadrance (p - c) | Ball c w <- balls]
+            grad p =
+              foldr (^+^) zero $
+                [ (-2 * w) *^ (p - c) ^/ (quadrance (p - c) ** 2)
+                | Ball c w <- balls
+                ]
+            h t = field (rayAt ray t) - threshold
+
+            ballAABB (Ball c w) =
+              let r = pure $ sqrt (w / threshold) in AABB (c ^-^ r) (c ^+^ r)
+
+            AABB lo hi =
+              (\(AABB lx hx) -> AABB (lx ^-^ pure 1) (hx ^+^ pure 1)) $
+                foldr1
+                  ( \(AABB lo1 hi1) (AABB lo2 hi2) ->
+                      AABB (liftA2 min lo1 lo2) (liftA2 max hi1 hi2)
+                  )
+                  (map ballAABB balls)
+
+            (tStart, tEnd) = (tmin', tmax')
+             where
+              tmin' = max tMin (tmin - 1e-9)
+              tmax' = min tMax (tmax + 1e-9)
+              (tmin, tmax) = (maximum $ liftA2 min t1 t2, minimum $ liftA2 max t1 t2)
+              (t1, t2) = (liftA2 (/) (lo ^-^ o) d, liftA2 (/) (hi ^-^ o) d)
+
+            steps = 60
+            dt = (tEnd - tStart) / steps
+
+            findBracket t
+              | t + dt > tEnd = Nothing
+              | h t * h (t + dt) <= 0 = Just (t, t + dt)
+              | otherwise = findBracket (t + dt)
+
+            refine t0 t1 0 = (t0 + t1) / 2
+            refine t0 t1 i =
+              let tm = (t0 + t1) / 2
+               in if h t0 * h tm <= 0
+                    then refine t0 tm (i - 1)
+                    else refine tm t1 (i - 1)
+           in
+            do
+              (t0, t1) <- findBracket tStart
+              let tHit = refine t0 t1 20
+                  pObj = rayAt ray tHit
+                  nObj = normalize $ negate (grad pObj)
+                  nHit =
+                    normalize $
+                      transform vector (transpose $ inv44 tf) nObj
+                  pHit = transform point tf pObj
+                  dat = HitData nHit pHit tHit undefined
+              Debug.Trace.traceShow (h tStart) $ pure (dat, mat dat ray')
  where
   planarIntersection tf ray@(Ray o d) tMin tMax =
     let denom = V3 0 1 0 `dot` d
@@ -390,104 +462,3 @@ triangulate (Data.Wavefront.Object n vs ns ts fs) =
         _ -> error "Invalid mesh (possibly not triangulated)"
     )
     fs
-
------------------------------------------------------------------------------
--- Quadrilateral Primitive Intersection
------------------------------------------------------------------------------
--- primitive _ (Quad q u v m) = [prim']
---  where
---   prim' ray@(Ray a dir) tMin tMax
---     | not $ t >= tMin && t <= tMax = Nothing
---     | otherwise = HitData normal (rayAt ray t) t (material m) <$> someThingUhh
---    where
---     n = u `cross` v
---     normal = normalize n
---     d = normal `dot` q
---     denom = normal `dot` dir
---     t = (d - (normal `dot` a)) / denom
---     w = (1 / (n `dot` n)) *^ n
---     intersection = rayAt ray t
---     planerHitpVec = intersection ^-^ q
---     alpha = w `dot` (planerHitpVec `cross` v)
---     beta = w `dot` (u `cross` planerHitpVec)
---     someThingUhh = isIn alpha beta
---     isIn g1 g2 =
---       guard (not (g1 < 0 || 1 < g1 || g2 < 0 || 1 < g2)) >> Just (g1, g2)
------------------------------------------------------------------------------
--- Plane Primitive Intersection
------------------------------------------------------------------------------
--- primitive (Plane (material -> m) tfs) =
---   \(rayTransform itf -> ray@(Ray o ( d))) tMin tMax ->
---     let denom = (V3 0 1 0) `dot` d
---         t = ((V3 0 1 0) `dot` ((V3 0 0 0) ^-^ o)) / denom
---         getN = normalize $ transform point (transpose $ inv44 tf) (V3 0 1 0)
---       in if
---           | denom == 0 -> Nothing
---           | not (t >= tMin && t <= tMax) -> Nothing
---           | otherwise ->
---               Just $
---                 (HitData getN (transform point tf (rayAt ray t)) t $ prettyError "Tried to evaluate uv for infinite surface", m (HitData getN (transform point tf (rayAt ray t)) t $ prettyError "Tried to evaluate uv for infinite surface") ray)
------------------------------------------------------------------------------
--- Circle Primitive Intersection
------------------------------------------------------------------------------
--- primitive o (Circle c r n m) = undefined
--- primitive o (Circle c r n m) = pure $ \ray tMin tMax ->
---   head (primitive o (Plane c n m)) ray tMin tMax
---     >>= (\u -> guard (norm (u.point ^-^ c) <= r) >> Just u)
------------------------------------------------------------------------------
--- Ring Primitive Intersection
------------------------------------------------------------------------------
--- primitive o (Ring c r1 r2 n m) = pure $ \ray tMin tMax ->
---   let innerCircle = head (primitive o (Circle c r1 n m)) ray tMin tMax
---       outerCircle = head (primitive o (Circle c r2 n m)) ray tMin tMax
---    in outerCircle >> guard (isNothing innerCircle) >> outerCircle
------------------------------------------------------------------------------
--- Triangle Primitive Intersection
------------------------------------------------------------------------------
--- primitive _ (Triangle v1@(V3 ax ay az) v2@(V3 bx by bz) v3@(V3 cx cy cz) m) =
---   pure $ \ray@(Ray (V3 ox oy oz) (V3 dx dy dz)) tMin tMax ->
---     let a =
---           V3
---             (V3 (ax - bx) (ax - cx) dx)
---             (V3 (ay - by) (ay - cy) dy)
---             (V3 (az - bz) (az - cz) dz)
---         b = V3 (V1 (ax - ox)) (V1 (ay - oy)) (V1 (az - oz))
---         (V3 (V1 β) (V1 γ) (V1 t)) = inv33 a !*! b
---      in if
---           | det33 a == 0 -> Nothing
---           | not $ t >= tMin && t <= tMax -> Nothing
---           | β > 0 && γ > 0 && β + γ <= 1 ->
---               Just $
---                 HitData ((v2 ^-^ v1) `cross` (v3 - v1)) (rayAt ray t) t (material m) (β, γ)
---           | otherwise -> Nothing
------------------------------------------------------------------------------
--- Triangle Mesh Intersection
------------------------------------------------------------------------------
--- primitive objs (Mesh k m) =
---   concat $
---     V.toList $
---       V.map (primitive objs) $
---         makeTriangles m $
---           fromMaybe
---             (prettyError $ "Object `" ++ k ++ "` not defined")
---             (objs M.!? k)
-
--- makeTriangles :: WorldMaterial -> WavefrontOBJ -> Vector Shape
--- makeTriangles m obj =
---   V.map
---     ( ( \case
---           [v1, v2, v3] -> Triangle v1 v2 v3 m
---           _ -> error "what"
---       )
---         . map
---           ( (\(Location x y z _) -> realToFrac <$> V3 x y z)
---               . ((objLocations obj V.!) . (1 `subtract`))
---           )
---         . ( \(Face i1 i2 i3 xis) ->
---               if not $ null xis
---                 then prettyError "Invalid object (possibly not triangulated)"
---                 else map faceLocIndex [i1, i2, i3]
---           )
---         . elValue
---     )
---     $ objFaces obj

@@ -12,16 +12,16 @@ import Codec.Picture
   , PixelRGBF (..)
   )
 import Control.DeepSeq (NFData)
-import Data.Aeson
+import Data.Aeson (FromJSON (parseJSON))
 import Data.Color (Color (..))
 import Data.Fixed (mod')
-import Data.Map (Map, (!?))
+import Data.Map ((!?))
 import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
-import Lime.Context
+import Lime.Context (RenderCtx (textures))
 import Lime.Internal.Hit (HitData (HitData, coords, normal, point))
 import Lime.Internal.Utils (prettyError, worldParse)
-import Linear
+import Linear (V3 (V3), (*^))
 
 type Texture = HitData -> Color Double
 
@@ -56,13 +56,6 @@ instance FromJSON TextureNode where
 
 texture :: RenderCtx -> TextureNode -> Texture
 texture _ (SolidColor color) _ = color
-{-
-[Alternate implementation]
-texture ts (Checkered k t1 t2) hit@(HitData {point, coords}) =
-  texture ts (if (sx * sy * sz) < 0 then t1 else t2) hit {coords = (abs sx, abs sy)}
-  where
-    (V3 sx sy sz) = sin . (k *) <$> point
--}
 texture ctx (Checkered k t1 t2) hit@(HitData {point}) =
   texture
     ctx
