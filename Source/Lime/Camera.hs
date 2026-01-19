@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoFieldSelectors #-}
 
 module Lime.Camera where
@@ -27,6 +28,7 @@ import Lime.Internal.Utils
 import Lime.Primitives
 import Lime.Textures
 import Linear
+import Linear.Transform (Transform, mkTransform, transform)
 import System.Random
 
 integrate
@@ -35,7 +37,7 @@ integrate
   -> BVH
   -> StdGen
   -> Int
-  -> Texture
+  -> (Texture, M44 Double)
   -> (Maybe HitData, Color Double)
 integrate ctx ray bvh g depth background =
   ( fst <$> maybeHit
@@ -60,28 +62,27 @@ rayColor
   -> BVH
   -> StdGen
   -> Int
-  -> Texture
+  -> (Texture, M44 Double)
   -> Color Double
-rayColor ctx ray@(Ray _ dir) bvh g depth background
+rayColor ctx ray@(Ray _ dir) bvh g depth bg@(background, bgTransform)
   | depth == 0 = Color 0 0 0
   | isNothing maybeHit =
       background $
-        HitData
-          { coords =
-              (\(V3 px py pz) -> ((atan2 (-pz) px + pi) / (2 * pi), acos (-py) / pi)) dir
-          , point = dir
-          , normal = error "Tried to access skybox normal"
-          , param = error "Tried to access skybox hit"
-          }
+        let dir' = transform vector bgTransform dir
+         in HitData
+              { coords =
+                  (\(V3 px py pz) -> ((atan2 (-pz) px + pi) / (2 * pi), acos (-py) / pi)) dir'
+              , point = dir'
+              , normal = error "Tried to access skybox normal"
+              , param = error "Tried to access skybox hit"
+              }
   | otherwise =
       maybe
         color
         (getColorProduct . (ColorProduct color <>) . ColorProduct)
         reflectedColor
  where
-  reflectedColor = (\t -> rayColor ctx t bvh g' (depth - 1) background) <$> reflected
-  -- (g0, g') = split g
-  -- rvec = head $ filter ((<= 1) . norm) $ randomRs ((V3 (-1) (-1) (-1)), (V3 1 1 1)) g0
+  reflectedColor = (\t -> rayColor ctx t bvh g' (depth - 1) bg) <$> reflected
   (rvec, g') = randomInUnitSphere g
   (color, reflected) = material (normalize rvec)
   (_, material) = fromJust maybeHit
@@ -100,7 +101,7 @@ render (SceneConfig {..}) (Camera {..}) ctx world gen =
   let primitives =
         force $
           concatMap
-            ( \q -> case q of
+            ( \case
                 Single s -> [s]
                 Compund (Mesh s t m) ->
                   map
@@ -109,7 +110,10 @@ render (SceneConfig {..}) (Camera {..}) ctx world gen =
             )
             world
       !bvh = force $ constructBVH ctx primitives
-      bg = force $ texture ctx backgroundTexture
+      bg =
+        ( force $ texture ctx background.texture
+        , force $ mkTransform background.transform
+        )
       pixelColor rgen (ui, vi) =
         ( ( \(hs, cs) ->
               let c =
@@ -246,7 +250,10 @@ convertToPreview scene =
           , samplesPerPixel = 8
           , maximumBounces = 2
           }
-    , camera = scene.camera {backgroundTexture = SolidColor (Color 1 1 1)}
+    , camera =
+        scene.camera
+          { background = scene.camera.background {texture = SolidColor (Color 1 1 1)}
+          }
     }
 
 data Camera = Camera
@@ -256,11 +263,20 @@ data Camera = Camera
   , fieldOfView :: !Double
   , upwardVector :: !(V3 Double)
   , defocusAngle :: !Double
-  , backgroundTexture :: !TextureNode
+  , background :: !Background
   }
   deriving (Show, Generic, Eq)
 
 instance FromJSON Camera where
+  parseJSON = worldParse
+
+data Background = Background
+  { texture :: !TextureNode
+  , transform :: !Transform
+  }
+  deriving (Show, Generic, Eq)
+
+instance FromJSON Background where
   parseJSON = worldParse
 
 data Object = Single Shape | Compund Mesh deriving (Show, Generic, Eq)

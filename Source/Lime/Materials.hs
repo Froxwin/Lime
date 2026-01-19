@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoFieldSelectors #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
@@ -17,7 +15,7 @@ import Lime.Context (RenderCtx)
 import Lime.Internal.Hit
 import Lime.Internal.Utils (worldParse)
 import Lime.Textures (TextureNode, texture)
-import Linear (_x)
+import Linear (V3, _x)
 import Linear.Metric
 import Linear.Optics (reflect, refract)
 import Linear.Vector
@@ -52,6 +50,14 @@ instance NFData MaterialNode
 
 instance FromJSON MaterialNode where
   parseJSON = worldParse
+
+data BXDF = BXDF
+  { eval :: V3 Double -> V3 Double -> Color Double
+  , pdf :: V3 Double -> V3 Double -> Double
+  , sample :: StdGen -> V3 Double -> (V3 Double, Double, StdGen)
+  }
+
+type BSDF = [BXDF]
 
 material :: RenderCtx -> MaterialNode -> HitData -> Ray -> Material
 -------------------------------------------------------------------------------

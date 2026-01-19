@@ -61,6 +61,22 @@ import SDL.Raw.Video qualified as SDL
 import SDL.Video.Renderer
 import System.FilePath ((</>))
 import System.Random (getStdGen)
+import HsLua
+  ( Exception
+  , LuaE
+  , LuaError
+  , Name
+  , Peekable (..)
+  , Peeker
+  , Type
+  , dofile
+  , getglobal
+  , openlibs
+  , peek
+  , peekViaJSON
+  , run
+  , top
+  )
 
 data Lime = Lime
   { input :: !FilePath
@@ -119,20 +135,36 @@ lime =
     )
     (fullDesc <> header "Lime 0.1.0.0 (c) Froxwin" <> progDesc "A raytracer")
 
+getExt :: String -> String
+getExt =
+  dropWhile (/= '.') . reverse . takeWhile (`notElem` ['/', '\\']) . reverse
+
+instance Peekable Scene where
+  safepeek :: LuaError e => Peeker e Scene
+  safepeek = peekViaJSON
+
 main :: IO ()
 main = do
   (Lime i o p t m fil) <- execParser lime
-  scene <-
-    ( either
-        ( errorWithoutStackTrace
-            . ("\ESC[1;31m" <>)
-            . (<> "\ESC[0m")
-            . prettyPrintParseException
+  scene :: Scene <- case getExt i of
+    ".yaml" ->
+      either
+          ( errorWithoutStackTrace
+              . ("\ESC[1;31m" <>)
+              . (<> "\ESC[0m")
+              . prettyPrintParseException
+          )
+          id
+          <$> decodeFileEither i
+    ".lua" ->
+      run
+        ( openlibs
+            >> dofile (Just i)
+            >> (getglobal "scene" :: LuaE Exception Type)
+            >> peek top
         )
-        id
-        <$> decodeFileEither i
-    )
-      :: IO Scene
+    _ -> errorWithoutStackTrace "\ESC[1;31mInvalid scene format\ESC[0m"
+
   putStrLn "[ IGNITION ]"
   initializeAll
   window <-

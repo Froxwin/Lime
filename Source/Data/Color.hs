@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
-
 module Data.Color where
 
 import Control.DeepSeq (NFData)

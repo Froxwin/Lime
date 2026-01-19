@@ -65,7 +65,7 @@ flag simd
   manual: True
 
 common library
-  default-language: GHC2021
+  default-language: GHC2024
   ghc-options:      -Wall
 
   -- -Weverything -Wcompat
@@ -93,10 +93,6 @@ common executable
 library
   import:             library, library-depends
   hs-source-dirs:     Source
-  default-extensions:
-    DeriveGeneric
-    InstanceSigs
-
   -- c-sources:          cbits/driver.c
 
   -- if flag(cuda)

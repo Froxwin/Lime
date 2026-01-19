@@ -1,5 +1,4 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -430,7 +429,7 @@ primitive ctx shape =
                       transform vector (transpose $ inv44 tf) nObj
                   pHit = transform point tf pObj
                   dat = HitData nHit pHit tHit undefined
-              Debug.Trace.traceShow (h tStart) $ pure (dat, mat dat ray')
+              pure (dat, mat dat ray')
  where
   planarIntersection tf ray@(Ray o d) tMin tMax =
     let denom = V3 0 1 0 `dot` d

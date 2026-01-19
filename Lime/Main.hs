@@ -57,7 +57,7 @@ import Options.Applicative
   , (<**>)
   )
 
-import Lime.Engine (Scene, ignite)
+import Lime.Engine (Scene, ignite, load)
 
 data Lime = Lime
   { input :: !FilePath
@@ -129,37 +129,43 @@ main = do
   (Lime i o p t m fil) <- execParser lime
   let f = if null fil then Nothing else Just fil
   case getExt i of
-    ".yaml" ->
-      decodeFileEither i
-        >>= ignite o p t m
-          . either
-            ( errorWithoutStackTrace
-                . ("\ESC[1;31m" <>)
-                . (<> "\ESC[0m")
-                . prettyPrintParseException
-            )
-            id
-    ".lua" ->
-      run
-        ( openlibs
-            >> dofile (Just i)
-            >> (getglobal "scene" :: LuaE Exception Type)
-            >> peek top
-        )
-        >>= ignite o p t m
-    ".anim.lua" -> do
-      mn <- newManager
-      run
-        ( openlibs
-            >> dofile (Just i)
-            >> (getglobal "scenes" :: LuaE Exception Type)
-            >> peek top
-        )
-        >>= mapM_
-          ( \(j, s) ->
-              forkManaged mn (ignite (o <> "/" <> show j <> ".png") p t m s)
+    ".yaml" -> do
+      scene <-
+        either
+          ( errorWithoutStackTrace
+              . ("\ESC[1;31m" <>)
+              . (<> "\ESC[0m")
+              . prettyPrintParseException
           )
-          . (\xs -> zip [1 .. length xs] xs)
+          id
+          <$> decodeFileEither i
+      (texs, objs) <- load t m scene
+      ignite o p texs objs scene
+    ".lua" -> do
+      scene <-
+        run
+          ( openlibs
+              >> dofile (Just i)
+              >> (getglobal "scene" :: LuaE Exception Type)
+              >> peek top
+          )
+      (texs, objs) <- load t m scene
+      ignite o p texs objs scene
+    ".anim.lua" -> do
+      scenes <-
+        run
+          ( openlibs
+              >> dofile (Just i)
+              >> (getglobal "scenes" :: LuaE Exception Type)
+              >> peek top
+          )
+      (texs, objs) <- load t m (head scenes)
+      mn <- newManager
+      mapM_
+        ( \(j, s) ->
+            forkManaged mn (ignite (o <> "/" <> show j <> ".png") p texs objs s)
+        )
+        (zip [1 .. length scenes] scenes)
       waitAll mn
     _ -> errorWithoutStackTrace "\ESC[1;31mInvalid scene format\ESC[0m"
 

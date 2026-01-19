@@ -1,11 +1,9 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# LANGUAGE TupleSections #-}
 
 module Lime.Engine
   ( Scene
   , ignite
+  , load
   , loadAsset
   , render
   )
@@ -13,6 +11,7 @@ where
 
 import Codec.Picture
 import Control.DeepSeq (deepseq)
+import Control.Parallel.Strategies (parMap, rdeepseq, rseq, withStrategy)
 import Data.Color (Color (Color), scale)
 import Data.Fixed (mod')
 import Data.List (minimumBy, nub, sort, (\\))
@@ -20,7 +19,7 @@ import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Ord (comparing)
 import Data.Vector.Strict qualified as V
-import Data.Wavefront (loadWavefront)
+import Data.Wavefront (Object, loadWavefront)
 import Lime.Camera
 import Lime.Context
 import Lime.Internal.Utils (prettyError)
@@ -42,7 +41,8 @@ loadAsset dir f e =
   fmap M.fromList
     . maybe
       (return [])
-      ( mapM (\(k, v) -> (k,) . either prettyError id <$> f (dir </> v))
+      ( sequence
+          . parMap rseq (\(k, v) -> (k,) . either prettyError id <$> f (dir </> v))
           . checkDupes
       )
  where
@@ -56,10 +56,12 @@ loadAsset dir f e =
               "Asset loading failed:\n"
                 ++ concatMap (\q -> e ++ " `" ++ q ++ "` defined twice\n") dups
 
-ignite
-  :: FilePath -> Bool -> FilePath -> FilePath -> Scene -> IO ()
-ignite output preview texDir modelDir rawScene = do
-  let !scene = if preview then convertToPreview rawScene else rawScene
+load
+  :: FilePath
+  -> FilePath
+  -> Scene
+  -> IO (Map String (Image PixelRGBF), Map String Data.Wavefront.Object)
+load texDir modelDir scene = do
   !texs <-
     M.map
       ( pixelMap
@@ -73,6 +75,17 @@ ignite output preview texDir modelDir rawScene = do
       )
       <$> loadAsset texDir readImage "Texture" scene.textures
   !objs <- loadAsset modelDir loadWavefront "Model" scene.models
+  pure (texs, objs)
+
+ignite
+  :: FilePath
+  -> Bool
+  -> Map String (Image PixelRGBF)
+  -> Map String Data.Wavefront.Object
+  -> Scene
+  -> IO ()
+ignite output preview texs objs rawScene = do
+  let !scene = if preview then convertToPreview rawScene else rawScene
 
   gen <- getStdGen
 
